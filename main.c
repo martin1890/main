@@ -160,43 +160,158 @@ void option_select(int x, int y, int width, int height, int background_color)
     has_prev = 1;
 }
 
+// ===== Random number generator =====
+
+static unsigned int rng_state = 1;
+
+void seed_rng(unsigned int seed)
+{
+    if (seed == 0) seed = 1;
+    rng_state = seed;
+}
+
+// Simple LCG
+unsigned int rand_u32(void)
+{
+    rng_state = rng_state * 1664525u + 1013904223u;
+    return rng_state;
+}
+
+// Random integer in [0, max-1]
+int rand_range(int max)
+{
+    if (max <= 0) return 0;
+    return (int)(rand_u32() % (unsigned int)max);
+}
+
+// ===== Game start / setup =====
+
+void start_game(int num_players, unsigned char player_colors[4],
+    int player_countries[4][15], int player_country_counts[4])
+{
+    // TODO: implement actual game here
+    while (1)
+    {
+    }
+}
+
+void setup_and_start_game(int num_players)
+{
+    // Seed RNG from timer (or any changing source)
+    volatile unsigned int* TIMER = (volatile unsigned int*)0x4000020;
+    seed_rng(*TIMER);
+
+    const unsigned char AVAILABLE_COLORS[4] = { 252, 38, 180, 12 };
+
+    unsigned char player_colors[4];
+    int player_country_counts[4] = { 0, 0, 0, 0 };
+    int player_countries[4][15];
+
+    // ---- Randomize colors (Fisher-Yates shuffle) ----
+    unsigned char colors[4];
+    for (int i = 0; i < 4; i++)
+        colors[i] = AVAILABLE_COLORS[i];
+
+    for (int i = 3; i > 0; i--)
+    {
+        int j = rand_range(i + 1);
+        unsigned char tmp = colors[i];
+        colors[i] = colors[j];
+        colors[j] = tmp;
+    }
+
+    for (int p = 0; p < num_players; p++)
+        player_colors[p] = colors[p];
+
+    // ---- Prepare list of countries 1..30 ----
+    int all_countries[30];
+    for (int i = 0; i < 30; i++)
+        all_countries[i] = i + 1;
+
+    // Shuffle countries
+    for (int i = 29; i > 0; i--)
+    {
+        int j = rand_range(i + 1);
+        int tmp = all_countries[i];
+        all_countries[i] = all_countries[j];
+        all_countries[j] = tmp;
+    }
+
+    // ---- Deal countries round-robin to players ----
+    int current_player = 0;
+    for (int i = 0; i < 30; i++)
+    {
+        int p = current_player % num_players;
+        int idx = player_country_counts[p];
+        if (idx < 15)
+        {
+            player_countries[p][idx] = all_countries[i];
+            player_country_counts[p]++;
+        }
+        current_player++;
+    }
+
+    // ---- Start the actual game ----
+    start_game(num_players, player_colors, player_countries, player_country_counts);
+}
+
+// ===== Updated start menu logic (switch + button) =====
+
 void update_start_menu()
 {
-    static int current_index = 0;
+    static int current_index = 0;   // 0 -> 2 players, 1 -> 3, 2 -> 4
     static int prev_switch = 0;
+    static int prev_button = 0;
     static int initialized = 0;
 
     volatile unsigned int* SWITCH = (volatile unsigned int*)0x4000010;
-    int sw = (*SWITCH) & 1; // Read least significant bit
+    volatile unsigned int* BUTTON = (volatile unsigned int*)0x40000d0;
 
-    // On first call: remember state and draw initial selection
+    int sw = (*SWITCH) & 1;   // Least significant bit of switch bank
+    int btn = (*BUTTON) & 1;  // Least significant bit of buttons
+
+    // First call: draw initial selection
     if (!initialized)
     {
         initialized = 1;
         prev_switch = sw;
-        option_select(60, 30, 200, 36, 36);
+        prev_button = btn;
+        option_select(60, 30, 200, 36, 36);  // start at "2 players"
         return;
     }
 
-    // Only react when switch toggles (0->1 or 1->0)
+    // --- Handle switch toggle to move selection ---
     if (sw != prev_switch)
     {
         prev_switch = sw;
 
-        // Advance menu index with wrap-around
         current_index++;
         if (current_index >= 3)
             current_index = 0;
 
-        // Call option_select with coordinates for each menu entry
         if (current_index == 0)
             option_select(60, 30, 200, 36, 36);
         else if (current_index == 1)
             option_select(60, 102, 200, 36, 36);
-        else // current_index == 2
+        else
             option_select(60, 174, 200, 36, 36);
     }
+
+    // --- Handle button press to confirm selection ---
+    // Here we react on a rising edge (0 -> 1)
+    if (btn == 1 && prev_button == 0)
+    {
+        int num_players;
+        if (current_index == 0)      num_players = 2;
+        else if (current_index == 1) num_players = 3;
+        else                         num_players = 4;
+
+        setup_and_start_game(num_players);
+    }
+
+    prev_button = btn;
 }
+
 
 
 
