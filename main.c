@@ -79,34 +79,64 @@ void draw_color_grid()
     }
 }
 
-// Draw one start menu box (same size and color as old start_menu sprite)
-void draw_start_menu_box(int x, int y)
+void draw_rect(int x, int y, int width, int height, int color)
 {
     volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
-    int screen_width = 320;
-    int screen_height = 240;
-    int width = 200;
-    int height = 36;
-    unsigned char color = 36; // same as in your start_menu data
+    const int screen_width = 320;
+    const int screen_height = 240;
+    unsigned char c = (unsigned char)color;
 
-    for (int j = 0; j < height; j++)
+    int x0 = x;
+    int y0 = y;
+    int x1 = x + width - 1;
+    int y1 = y + height - 1;
+
+    // Top border
+    for (int xi = x0; xi <= x1; xi++)
+        VGA[y0 * screen_width + xi] = c;
+
+    // Bottom border
+    if (y1 != y0)
     {
-        int py = y + j;
-        if (py < 0 || py >= screen_height)
-            continue;
+        for (int xi = x0; xi <= x1; xi++)
+            VGA[y1 * screen_width + xi] = c;
+    }
 
-        int row_index = py * screen_width;
-
-        for (int i = 0; i < width; i++)
-        {
-            int px = x + i;
-            if (px < 0 || px >= screen_width)
-                continue;
-
-            VGA[row_index + px] = color;
-        }
+    // Left and right borders
+    for (int yi = y0 + 1; yi <= y1 - 1; yi++)
+    {
+        VGA[yi * screen_width + x0] = c;
+        if (x1 != x0)
+            VGA[yi * screen_width + x1] = c;
     }
 }
+
+// Draw one start menu box (same size and color as old start_menu sprite)
+void draw_filled_rect(int x, int y, int width, int height, int color)
+{
+    // Draw the outer border
+    draw_rect(x, y, width, height, color);
+
+    // Shrink rectangle for inner fill
+    int inner_x = x + 1;
+    int inner_y = y + 1;
+    int inner_w = width - 2;
+    int inner_h = height - 2;
+
+    // Base case: stop when there is no room left for an inner rectangle
+    if (inner_w < 2 || inner_h < 2)
+    {
+        // For very small inside (1 pixel wide or high), we can optionally
+        // just fill the last line(s) manually if you vill ha det absolut 100% tätt,
+        // men med draw_rect-logiken ovan är det redan täckt ganska bra.
+        return;
+    }
+
+    // Recursive call to fill inner area
+    draw_filled_rect(inner_x, inner_y, inner_w, inner_h, color);
+}
+
+
 
 void draw() {
     // Create a pointer called VGA that points to the drawing area
@@ -128,9 +158,9 @@ int main()
     draw_color_grid();
     draw_sprite(50, 100, soldat_sprite, 9, 19);
     draw_sprite(300, 100, soldat_sprite, 9, 19);
-    draw_start_menu_box(60, 30);
-    draw_start_menu_box(60, 102);
-    draw_start_menu_box(60, 174);
+    draw_filled_rect(60, 30, 200, 36, 36);
+    draw_filled_rect(60, 102, 200, 36, 36);
+    draw_filled_rect(60, 174, 200, 36, 36);
     // Enter a forever loop
     while (1)
     {
