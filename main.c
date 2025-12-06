@@ -272,9 +272,6 @@ void start_game(int num_players, unsigned char player_colors[4],
 
 void setup_and_start_game(int num_players)
 {
-    // Seed RNG from timer (or any changing source)
-    volatile unsigned int* TIMER = (volatile unsigned int*)0x4000020;
-    seed_rng(*TIMER);
 
     const unsigned char AVAILABLE_COLORS[4] = { 252, 38, 200, 12 };
 
