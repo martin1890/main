@@ -1,3 +1,5 @@
+#include "map.h"
+
 const unsigned char soldat_sprite[9 * 19] = {
     0,0,0,0,36,0,0,0,109,
     0,0,36,36,109,36,36,0,172,
@@ -45,10 +47,6 @@ void draw_sprite(int x, int y, const unsigned char* sprite, int sprite_width, in
 
             int px = x + i;
             int py = y + j;
-
-            // Bounds check so we do not write outside the screen
-            if (px < 0 || px >= screen_width || py < 0 || py >= 240)
-                continue;
 
             VGA[py * screen_width + px] = color;
         }
@@ -190,6 +188,7 @@ void start_game(int num_players, unsigned char player_colors[4],
     int player_countries[4][15], int player_country_counts[4])
 {
     // TODO: implement actual game here
+    draw_sprite(0, 0, game_map, 320, 240);
     while (1)
     {
     }
@@ -310,22 +309,6 @@ void update_start_menu()
     }
 
     prev_button = btn;
-}
-
-
-
-
-void draw() {
-    // Create a pointer called VGA that points to the drawing area
-    volatile char* VGA = (volatile char*)0x08000000;
-
-    // Clear the entire VGA buffer area by writing the value 0 (=black)
-    for (int i = 0; i < 320 * 480; i++)
-        VGA[i] = 0;
-
-    // Draw five rows of white pixels (remember that screen is 320 pixels wide and the color 255 is white)
-    for (int i = 0; i < 320 * 5; i++)
-        VGA[320 * 118 + i] = 255;
 }
 
 int main()
