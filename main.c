@@ -276,7 +276,7 @@ void setup_and_start_game(int num_players)
     volatile unsigned int* TIMER = (volatile unsigned int*)0x4000020;
     seed_rng(*TIMER);
 
-    const unsigned char AVAILABLE_COLORS[4] = { 252, 38, 180, 12 };
+    const unsigned char AVAILABLE_COLORS[4] = { 252, 38, 200, 12 };
 
     unsigned char player_colors[4];
     int player_country_counts[4] = { 0, 0, 0, 0 };
