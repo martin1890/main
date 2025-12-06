@@ -140,9 +140,9 @@ int main()
     draw_color_grid();
     draw_sprite(50, 100, soldat_sprite, 9, 19);
     draw_sprite(100, 100, soldat_sprite, 9, 19);
-    draw_sprite(60, 66, start_menu, 200, 36);
+    draw_sprite(60, 30, start_menu, 200, 36);
     draw_sprite(60, 102, start_menu, 200, 36);
-    draw_sprite(60, 138, start_menu, 200, 36);
+    draw_sprite(60, 174, start_menu, 200, 36);
     // Enter a forever loop
     while (1)
     {
