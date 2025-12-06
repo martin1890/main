@@ -114,11 +114,6 @@ void draw_faction_sprite(int x, int y, const unsigned char* sprite, int sprite_w
     }
 }
 
-void draw_region()
-{
-
-}
-
 void draw_color_grid()
 {
     volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
@@ -253,20 +248,24 @@ int rand_range(int max)
 void start_game(int num_players, unsigned char player_colors[4],
     int player_countries[4][15], int player_country_counts[4])
 {
-    // TODO: implement actual game here
     draw_sprite(0, 0, game_map, 320, 240);
-    for (int i = 0; i < num_players-1; i++) {
+
+    for (int i = 0; i < num_players; i++) {
         for (int n = 0; n < player_country_counts[i]; n++) {
-            int region_x = region_positions[n][2];
-            int region_y = region_positions[n][3];
+            int region_id = player_countries[i][n];   // 1..30
+            int idx = region_id - 1;                  // 0..29
+
+            int region_x = region_positions[idx][2];  // välj vilken punkt du vill
+            int region_y = region_positions[idx][3];
+
             draw_faction_sprite(region_x, region_y, soldat_sprite, 9, 19, player_colors[i]);
         }
-
     }
-    while (1)
-    {
+
+    while (1) {
     }
 }
+
 
 void setup_and_start_game(int num_players)
 {
