@@ -25,7 +25,7 @@ const unsigned char soldat_sprite[9 * 19] = {
 const int region_positions[30][16] = {
 {0, 150, 9, 170, 18, 221, 58, 221, 20, 180, 12, 194, 44, 194, 43, 232},
 {78, 205, 114, 221, 104, 221, 161, 221, 128, 230, 143, 230, 149, 218, 87, 231},
-{175, 187, 209, 197, 193, 221, 240, 221, 214, 225, 207, 231, 229, 218, 221, 206},
+{175, 187, 209, 197, 193, 221, 236, 221, 214, 225, 207, 231, 225, 218, 221, 206},
 {156, 151, 188, 191, 197, 169, 173, 202, 172, 166, 182, 176, 163, 174, 170, 187},
 {166, 108, 223, 118, 204, 145, 222, 144, 199, 116, 212, 116, 193, 125, 209, 131},
 {211, 147, 233, 180, 243, 194, 223, 172, 247, 176, 262, 173, 255, 192, 245, 158},
@@ -382,6 +382,10 @@ void update_start_menu()
         if (current_index == 0)      num_players = 2;
         else if (current_index == 1) num_players = 3;
         else                         num_players = 4;
+
+        // Seed RNG based on how long we waited plus some menu state
+        unsigned int seed = entropy_counter ^ (unsigned int)(current_index * 0x9E3779B1u);
+        seed_rng(seed);
 
         setup_and_start_game(num_players);
     }
