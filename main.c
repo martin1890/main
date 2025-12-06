@@ -83,7 +83,6 @@ void draw_rect(int x, int y, int width, int height, int color)
 {
     volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
     const int screen_width = 320;
-    const int screen_height = 240;
     unsigned char c = (unsigned char)color;
 
     int x0 = x;
@@ -136,6 +135,69 @@ void draw_filled_rect(int x, int y, int width, int height, int color)
     draw_filled_rect(inner_x, inner_y, inner_w, inner_h, color);
 }
 
+void option_select(int x, int y, int width, int height, int background_color)
+{
+    static int prev_x = 0;
+    static int prev_y = 0;
+    static int prev_w = 0;
+    static int prev_h = 0;
+    static int has_prev = 0;
+
+    // Remove previous selection border by drawing over it with background color
+    if (has_prev)
+    {
+        draw_rect(prev_x, prev_y, prev_w, prev_h, background_color);
+    }
+
+    // Draw new selection border with constant color 216
+    draw_rect(x, y, width, height, 216);
+
+    // Remember this selection for next time
+    prev_x = x;
+    prev_y = y;
+    prev_w = width;
+    prev_h = height;
+    has_prev = 1;
+}
+
+void update_start_menu()
+{
+    static int current_index = 0;
+    static int prev_switch = 0;
+    static int initialized = 0;
+
+    volatile unsigned int* SWITCH = (volatile unsigned int*)0x4000010;
+    int sw = (*SWITCH) & 1; // Read least significant bit
+
+    // On first call: remember state and draw initial selection
+    if (!initialized)
+    {
+        initialized = 1;
+        prev_switch = sw;
+        option_select(60, 30, 200, 36, 36);
+        return;
+    }
+
+    // Only react when switch toggles (0->1 or 1->0)
+    if (sw != prev_switch)
+    {
+        prev_switch = sw;
+
+        // Advance menu index with wrap-around
+        current_index++;
+        if (current_index >= 3)
+            current_index = 0;
+
+        // Call option_select with coordinates for each menu entry
+        if (current_index == 0)
+            option_select(60, 30, 200, 36, 36);
+        else if (current_index == 1)
+            option_select(60, 102, 200, 36, 36);
+        else // current_index == 2
+            option_select(60, 174, 200, 36, 36);
+    }
+}
+
 
 
 void draw() {
@@ -164,5 +226,6 @@ int main()
     // Enter a forever loop
     while (1)
     {
+        update_start_menu();
     }
 }
