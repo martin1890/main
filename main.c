@@ -313,8 +313,6 @@ void update_start_menu()
 
 int main()
 {
-    draw();
-    
     draw_color_grid();
     draw_sprite(50, 100, soldat_sprite, 9, 19);
     draw_sprite(300, 100, soldat_sprite, 9, 19);
