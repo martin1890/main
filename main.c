@@ -44,6 +44,31 @@ void draw_sprite(int x, int y, const unsigned char* sprite, int sprite_width, in
     }
 }
 
+void draw_color_grid()
+{
+    volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
+    int screen_width = 320;
+    int screen_height = 240;
+    int tile_size = 16;              // 16x16 blocks
+    int tiles_per_row = screen_width / tile_size; // 20
+
+    for (int y = 0; y < screen_height; y++)
+    {
+        int tile_y = y / tile_size;
+        for (int x = 0; x < screen_width; x++)
+        {
+            int tile_x = x / tile_size;
+            int color_index = tile_y * tiles_per_row + tile_x; // 0..299
+
+            if (color_index > 255)
+                color_index = 0;      // Extra tiles become color 0
+
+            VGA[y * screen_width + x] = (unsigned char)color_index;
+        }
+    }
+}
+
+
 
 void draw() {
     // Create a pointer called VGA that points to the drawing area
@@ -62,6 +87,7 @@ int main()
 {
     draw();
     draw_sprite(50, 100, plus_sprite, 8, 8);
+    draw_color_grid();
 
     // Enter a forever loop
     while (1)
