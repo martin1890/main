@@ -87,27 +87,30 @@ void draw_sprite(int x, int y, const unsigned char* sprite, int sprite_width, in
 }
 
 // Draw a faction sprite at position (x, y)
-void draw_faction_sprite(int x, int y, const unsigned char* sprite, int sprite_width, int sprite_height, int faction_color)
+void draw_faction_sprite(int x, int y, const unsigned char* sprite,
+    int sprite_width, int sprite_height, int faction_color)
 {
-    volatile char* VGA = (volatile char*)0x08000000; // Base address of VGA memory
-    int screen_width = 320;
+    volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
+    const int screen_width = 320;
+    const int screen_height = 240;
+    unsigned char fc = (unsigned char)faction_color;
 
     for (int j = 0; j < sprite_height; j++)
     {
         for (int i = 0; i < sprite_width; i++)
         {
-            // Read pixel from sprite
             unsigned char color = sprite[j * sprite_width + i];
 
-            // Example: treat color 0 as transparent
             if (color == 0)
                 continue;
-            if (color == 252) {
-                color = faction_color;
-            }
+            if (color == 252)
+                color = fc;
 
             int px = x + i;
             int py = y + j;
+
+            if (px < 0 || px >= screen_width || py < 0 || py >= screen_height)
+                continue;
 
             VGA[py * screen_width + px] = color;
         }
@@ -245,41 +248,40 @@ int rand_range(int max)
 
 // ===== Game start / setup =====
 
-//void start_game(int num_players, unsigned char player_colors[4],
-//    int player_countries[4][15], int player_country_counts[4])
-//{
-//    draw_sprite(0, 0, game_map, 320, 240);
-//
-//    for (int i = 0; i < num_players; i++) {
-//        for (int n = 0; n < player_country_counts[i]; n++) {
-//            int region_id = player_countries[i][n];   // 1..30
-//            int idx = region_id - 1;                  // 0..29
-//
-//            int region_x = region_positions[idx][2];  // välj vilken punkt du vill
-//            int region_y = region_positions[idx][3];
-//
-//            draw_faction_sprite(region_x, region_y, soldat_sprite, 9, 19, player_colors[i]);
-//        }
-//    }
-//
-//    while (1) {
-//    }
-//}
-
 void start_game(int num_players, unsigned char player_colors[4],
     int player_countries[4][15], int player_country_counts[4])
 {
+    // Rita kartan
     draw_sprite(0, 0, game_map, 320, 240);
 
-    // Test: rita EN pixel i hörnet per spelare
-    volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
-    for (int i = 0; i < num_players; i++) {
-        VGA[i] = player_colors[i]; // piksel i (i,0)
+    // Rita soldater för alla spelare
+    for (int p = 0; p < num_players; p++)
+    {
+        int color = player_colors[p];
+
+        for (int n = 0; n < player_country_counts[p]; n++)
+        {
+            int region_id = player_countries[p][n];   // 1..30
+
+            // Säkerhetskoll
+            if (region_id < 1 || region_id > 30)
+                continue;
+
+            int idx = region_id - 1;                  // 0..29
+
+            // Välj t.ex. andra punktparet (index 2,3)
+            int region_x = region_positions[idx][2];
+            int region_y = region_positions[idx][3];
+
+            draw_faction_sprite(region_x, region_y,
+                soldat_sprite, 9, 19, color);
+        }
     }
 
-    while (1) {}
+    while (1)
+    {
+    }
 }
-
 
 
 void setup_and_start_game(int num_players)
