@@ -55,6 +55,30 @@ const int region_positions[30][16] = {
 {7, 0, 22, 10, 40, 24, 36, 0, 28, 31, 13, 13, 26, 1, 48, 2}
 };
 
+// ===== Random number generator =====
+
+static unsigned int rng_state = 1;
+static unsigned int entropy_counter = 1;
+
+void seed_rng(unsigned int seed)
+{
+    if (seed == 0) seed = 1;
+    rng_state = seed;
+}
+
+// Simple LCG
+unsigned int rand_u32(void)
+{
+    rng_state = rng_state * 1664525u + 1013904223u;
+    return rng_state;
+}
+
+// Random integer in [0, max-1]
+int rand_range(int max)
+{
+    if (max <= 0) return 0;
+    return (int)(rand_u32() % (unsigned int)max);
+}
 
 // Empty interrupt handler
 void handle_interrupt(unsigned _irq)
@@ -222,30 +246,6 @@ void option_select(int x, int y, int width, int height, int background_color)
     has_prev = 1;
 }
 
-// ===== Random number generator =====
-
-static unsigned int rng_state = 1;
-
-void seed_rng(unsigned int seed)
-{
-    if (seed == 0) seed = 1;
-    rng_state = seed;
-}
-
-// Simple LCG
-unsigned int rand_u32(void)
-{
-    rng_state = rng_state * 1664525u + 1013904223u;
-    return rng_state;
-}
-
-// Random integer in [0, max-1]
-int rand_range(int max)
-{
-    if (max <= 0) return 0;
-    return (int)(rand_u32() % (unsigned int)max);
-}
-
 // ===== Game start / setup =====
 
 void start_game(int num_players, unsigned char player_colors[4],
@@ -341,6 +341,8 @@ void update_start_menu()
 
     volatile unsigned int* SWITCH = (volatile unsigned int*)0x4000010;
     volatile unsigned int* BUTTON = (volatile unsigned int*)0x40000d0;
+
+    entropy_counter = entropy_counter * 1664525u + 1013904223u;
 
     int sw = (*SWITCH) & 1;   // Least significant bit of switch bank
     int btn = (*BUTTON) & 1;  // Least significant bit of buttons
