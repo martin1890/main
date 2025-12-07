@@ -486,6 +486,7 @@ void draw_menu(int menu_index, int option, int can)
     const unsigned char* sprite = menu_sprites[menu_index];
 
     // rita själva menyfönstret
+    draw_filled_rect(248, 193, 72, 47, 109);
     draw_sprite(248, 193, sprite, 72, 47);
 
     int color;
