@@ -1,4 +1,5 @@
 #include "map.h"
+#include "borders.h"
 
 const unsigned char soldat_sprite[9 * 19] = {
     0,0,0,0,36,0,0,0,109,
@@ -18,8 +19,8 @@ const unsigned char soldat_sprite[9 * 19] = {
     0,36,36,36,109,109,109,36,172,
     0,36,109,109,109,109,109,36,172,
     0,36,36,36,36,36,36,36,172,
-    0,252,252,0,0,0,252,252,172,
-    0,136,136,0,0,0,136,136,172
+    0,0,252,252,0,252,252,0,172,
+    0,0,136,136,0,136,136,0,172
 };
 
 const int region_positions[30][16] = {
@@ -28,7 +29,7 @@ const int region_positions[30][16] = {
 {175, 187, 209, 197, 193, 221, 236, 221, 214, 225, 207, 231, 225, 218, 221, 206},
 {156, 151, 188, 191, 197, 169, 173, 202, 172, 166, 182, 176, 163, 174, 170, 187},
 {166, 108, 223, 118, 204, 145, 222, 144, 199, 116, 212, 116, 193, 125, 209, 131},
-{211, 147, 233, 180, 243, 194, 223, 172, 247, 176, 262, 173, 255, 192, 245, 158},
+{211, 147, 233, 180, 246, 167, 223, 172, 233, 170, 260, 179, 258, 162, 245, 158},
 {265, 126, 298, 172, 285, 172, 310, 172, 296, 154, 305, 141, 287, 136, 273, 150},
 {236, 80, 274, 109, 242, 126, 261, 128, 257, 114, 253, 121, 261, 103, 265, 90},
 {284, 58, 300, 70, 311, 65, 310, 106, 305, 90, 303, 96, 290, 99, 298, 111},
@@ -54,6 +55,13 @@ const int region_positions[30][16] = {
 {0, 17, 13, 39, 1, 25, 6, 67, 2, 59, 2, 46, 14, 59, 10, 30},
 {7, 0, 22, 10, 40, 24, 36, 0, 28, 31, 13, 13, 26, 1, 48, 2}
 };
+
+// 0 = "action"-region (gör saker här), 1 = "move"-region (flytta soldater hit)
+#define BORDER_SELECT_ACTION 0
+#define BORDER_SELECT_MOVE   1
+
+static int selected_action_region = -1; // 1..30, -1 = ingen
+static int selected_move_region = -1; // 1..30, -1 = ingen
 
 // ===== Random number generator =====
 
@@ -246,6 +254,79 @@ void option_select(int x, int y, int width, int height, int background_color)
     has_prev = 1;
 }
 
+void border_select(int region, int select_type)
+{
+    if (region < 1 || region > 30)
+        return; // ogiltigt regions-id
+
+    int color_select;
+    int* prev_region_ptr;
+
+    if (select_type == BORDER_SELECT_MOVE) {
+        color_select = 220;                 // målregion
+        prev_region_ptr = &selected_move_region;
+    }
+    else {
+        color_select = 132;                 // "gör saker i"-region
+        prev_region_ptr = &selected_action_region;
+    }
+
+    int idx = region - 1;                   // 0..29
+
+    // Avselektera tidigare region i samma kategori (om den finns)
+    if (*prev_region_ptr >= 1 && *prev_region_ptr <= 30 && *prev_region_ptr != region)
+    {
+        int prev_idx = *prev_region_ptr - 1;
+        int px = region_positions[prev_idx][0];
+        int py = region_positions[prev_idx][1];
+        const BorderInfo* pb = &borders[prev_idx];
+        // rita border i normal gränsfärg (36) för att "ta bort" highlight
+        draw_faction_sprite(px, py, pb->data, pb->width, pb->height, 36);
+    }
+
+    // Spara nya regionen som vald i den här kategorin
+    *prev_region_ptr = region;
+
+    // Rita ny selection-border i rätt färg
+    int x = region_positions[idx][0];
+    int y = region_positions[idx][1];
+    const BorderInfo* b = &borders[idx];
+    draw_faction_sprite(x, y, b->data, b->width, b->height, color_select);
+}
+
+void update_action_region_selection()
+{
+    static int current_region = 1;      // 1..30
+    static int prev_button = 0;
+    static int initialized = 0;
+
+    volatile unsigned int* BUTTON = (volatile unsigned int*)0x40000d0;
+    int btn = (*BUTTON) & 1;
+
+    // Första gången: bara initiera prev_button, gör inget
+    if (!initialized)
+    {
+        prev_button = btn;
+        initialized = 1;
+        return;
+    }
+
+    // Rising edge: 0 -> 1
+    if (btn == 1 && prev_button == 0)
+    {
+        border_select(current_region, BORDER_SELECT_ACTION);
+
+        // Nästa region, wrap 30 -> 1
+        current_region++;
+        if (current_region > 30)
+            current_region = 1;
+    }
+
+    prev_button = btn;
+}
+
+
+
 // ===== Game start / setup =====
 
 void start_game(int num_players, unsigned char player_colors[4],
@@ -266,6 +347,7 @@ void start_game(int num_players, unsigned char player_colors[4],
     }
 
     while (1) {
+        update_action_region_selection();
     }
 }
 
