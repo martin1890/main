@@ -580,7 +580,7 @@ void handle_buy_menu_selection(int* current_mode, int* menu_index, int* menu_opt
 void game_menu(int* menu_index,
     int* current_mode,
     int* menu_option_count,
-    int turn_player,
+    int* turn_player,
     int player_countries[4][15],
     int player_country_counts[4],
     int num_players)
@@ -633,12 +633,13 @@ void game_menu(int* menu_index,
             break;
 
         case MENU_SIEGE_TURN_END:
-            turn_player++;
-            if (turn_player > num_players) {
-                turn_player = 0;
+            *turn_player++;
+            if (*turn_player > num_players) {
+                *turn_player = 0;
             }
             *menu_index = 3;
             *current_mode = 0;
+            *menu_option_count = 4;
             draw_menu(*menu_index, 0, 1);
             // ...
             break;
