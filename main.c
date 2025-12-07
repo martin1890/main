@@ -633,7 +633,7 @@ void game_menu(int* menu_index,
             break;
 
         case MENU_SIEGE_TURN_END:
-            *turn_player++;
+            (*turn_player)++;
             if (*turn_player > num_players) {
                 *turn_player = 0;
             }
@@ -693,7 +693,7 @@ void start_game(int num_players, unsigned char player_colors[4],
 
     while (1) {
         game_menu(&menu_index, &game_mode, &menu_option_count,
-            turn_player, player_countries, player_country_counts, num_players);
+            &turn_player, player_countries, player_country_counts, num_players);
     }
 }
 
