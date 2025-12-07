@@ -1,5 +1,7 @@
 #include "map.h"
 #include "borders.h"
+#include "menus.h"
+
 
 const unsigned char soldat_sprite[9 * 19] = {
     0,0,0,0,36,0,0,0,109,
@@ -78,7 +80,7 @@ const int move_targets[30][7] = {
 {18, 15, 16, 0, 0, 0, 0},
 {1, 21, 23, 0, 0, 0, 0},
 {23, 20, 22, 0, 0, 0, 0},
-{23, 21, 26, 0, 0, 0, 0},
+{23, 21, 17, 26, 0, 0, 0},
 {24, 20, 21, 22, 26, 25, 0},
 {23, 25, 29, 0, 0, 0, 0},
 {24, 23, 26, 27, 30, 29, 0},
@@ -89,11 +91,33 @@ const int move_targets[30][7] = {
 {29, 25, 27, 28, 0, 0, 0},
 };
 
+const int menu_positions[4][4] = {
+    { 250, 193, 64, 12 },
+    { 250, 205, 61, 10 },
+    { 250, 215, 29, 12 },
+    { 250, 227, 50, 10 }
+};
+
+enum {
+    MENU_AFTER_BATTLE = 0,
+    MENU_BATTLE,
+    MENU_BUY,
+    MENU_MAIN,
+    MENU_MARCH,
+    MENU_SIEGE,
+    MENU_SIEGE_TURN_END,
+    MENU_SORTIE,
+    MENU_WILL_SORTIE,
+    MENU_COUNT
+};
+
+
 #define SWITCH_ADDR 0x4000010
 #define BUTTON_ADDR 0x40000d0
 
 volatile unsigned int* const SWITCH = (volatile unsigned int*)SWITCH_ADDR;
 volatile unsigned int* const BUTTON = (volatile unsigned int*)BUTTON_ADDR;
+static int has_prev = 0;
 
 #define GAME_MENU_ACTION 0
 #define GAME_MENU_MOVE   1
@@ -173,7 +197,6 @@ void handle_interrupt(unsigned _irq)
 // Draw a sprite at position (x, y)
 void draw_sprite(int x, int y, const unsigned char* sprite, int sprite_width, int sprite_height)
 {
-    volatile char* VGA = (volatile char*)0x08000000; // Base address of VGA memory
     int screen_width = 320;
 
     for (int j = 0; j < sprite_height; j++)
@@ -198,7 +221,6 @@ void draw_sprite(int x, int y, const unsigned char* sprite, int sprite_width, in
 // Draw a faction sprite at position (x, y)
 void draw_faction_sprite(int x, int y, const unsigned char* sprite, int sprite_width, int sprite_height, int faction_color)
 {
-    volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
     const int screen_width = 320;
     const int screen_height = 240;
     unsigned char fc = (unsigned char)faction_color;
@@ -228,7 +250,6 @@ void draw_faction_sprite(int x, int y, const unsigned char* sprite, int sprite_w
 
 void draw_color_grid()
 {
-    volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
     int screen_width = 320;
     int screen_height = 240;
     int tile_size = 16;              // 16x16 blocks
@@ -252,7 +273,6 @@ void draw_color_grid()
 
 void draw_rect(int x, int y, int width, int height, int color)
 {
-    volatile unsigned char* VGA = (volatile unsigned char*)0x08000000;
     const int screen_width = 320;
     unsigned char c = (unsigned char)color;
 
@@ -312,7 +332,6 @@ void option_select(int x, int y, int width, int height, int background_color)
     static int prev_y = 0;
     static int prev_w = 0;
     static int prev_h = 0;
-    static int has_prev = 0;
 
     // Remove previous selection border by drawing over it with background color
     if (has_prev)
@@ -455,9 +474,69 @@ void next_move_target(void)
     border_select(selected_action_region, BORDER_SELECT_ACTION);
 }
 
+void draw_menu(int menu_index, int option, int can)
+{
+    has_prev = 0;
 
-void game_menu(int* current_mode, int turn_player,
-    int player_countries[4][15], int player_country_counts[4])
+    // skydd om något skulle skicka fel index
+    if (menu_index < 0 || menu_index >= 9)
+        return;
+
+    const unsigned char* sprite = menu_sprites[menu_index];
+
+    // rita själva menyfönstret
+    draw_sprite(248, 193, sprite, 72, 47);
+
+    int color;
+    if (can == 1)
+        color = 252;
+    else
+        color = 200;
+
+    int x = menu_positions[option][0];
+    int y = menu_positions[option][1];
+    int width = menu_positions[option][2];
+    int height = menu_positions[option][3];
+
+    option_select(x, y, width, height, color);
+}
+
+
+
+
+void handle_main_menu_selection(int* current_mode, 
+    int* menu_index, 
+    int* menu_option_count, 
+    int turn_player, 
+    int player_countries[4][15], 
+    int player_country_counts[4]);
+{
+    switch (current_mode)
+    {
+    0:
+    next_action_region(turn_player, player_countries, player_country_counts);
+    break;
+    1:
+    next_move_target();
+    break;
+    2:
+
+    break;
+    3:
+    break;
+
+    }
+
+}
+//void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count);
+// ... fler handler-deklarationer efter behov
+
+void game_menu(int* menu_index,
+    int* current_mode,
+    int* menu_option_count,
+    int turn_player,
+    int player_countries[4][15],
+    int player_country_counts[4])
 {
     static InputState input_state = { 0 };
 
@@ -466,27 +545,64 @@ void game_menu(int* current_mode, int turn_player,
 
     read_input(&input_state, &sw, &btn, &sw_toggled, &btn_rising);
 
-    // Switch toggle: cycle mode (ACTION <-> MOVE)
+    // Toggle on switch: go to next option in current menu and redraw menu
     if (sw_toggled)
     {
         (*current_mode)++;
-        if (*current_mode >= 2)
+        if (*current_mode >= *menu_option_count)
             *current_mode = 0;
+
+        int can = 1; // TODO: compute real "can" later
+        draw_menu(*menu_index, *current_mode, can);
     }
 
-    // Button rising edge: perform action for current mode
+    // Button press: perform action depending on which menu we are in
     if (btn_rising)
     {
-        if (*current_mode == GAME_MENU_ACTION)
+        switch (*menu_index)
         {
-            next_action_region(turn_player, player_countries, player_country_counts);
-        }
-        else if (*current_mode == GAME_MENU_MOVE)
-        {
-            next_move_target();
+        case MENU_MAIN:
+            handle_main_menu_selection(current_mode, menu_index, menu_option_count, turn_player, player_countries, player_country_counts);
+            break;
+
+        case MENU_MARCH:
+            //handle_march_menu_selection(current_mode, menu_index, menu_option_count);
+            break;
+
+        case MENU_BUY:
+            // handle_buy_menu_selection(current_mode, menu_index, menu_option_count);
+            break;
+
+        case MENU_SIEGE:
+            // handle_siege_menu_selection(...)
+            break;
+
+        case MENU_AFTER_BATTLE:
+            // ...
+            break;
+
+        case MENU_BATTLE:
+            // ...
+            break;
+
+        case MENU_SIEGE_TURN_END:
+            // ...
+            break;
+
+        case MENU_SORTIE:
+            // ...
+            break;
+
+        case MENU_WILL_SORTIE:
+            // ...
+            break;
+
+        default:
+            break;
         }
     }
 }
+
 
 
 // ===== Game start / setup =====
@@ -495,9 +611,14 @@ void start_game(int num_players, unsigned char player_colors[4],
     int player_countries[4][15], int player_country_counts[4])
 {
     int turn_player = 0;
-    int game_mode = GAME_MENU_ACTION;
+
+    int game_mode = 0;          // current option in current menu
+    int menu_index = MENU_MAIN; // start in main menu
+    int menu_option_count = 4;  // main menu has 4 options
 
     draw_sprite(0, 0, game_map, 320, 240);
+    draw_rect(247, 192, 73, 48, 36);
+
 
     for (int i = 0; i < num_players; i++) {
         for (int n = 0; n < player_country_counts[i]; n++) {
@@ -510,9 +631,12 @@ void start_game(int num_players, unsigned char player_colors[4],
             draw_faction_sprite(region_x, region_y, soldat_sprite, 9, 19, player_colors[i]);
         }
     }
+    // draw initial menu
+    draw_menu(menu_index, game_mode, 1);
 
     while (1) {
-        game_menu(&game_mode, turn_player, player_countries, player_country_counts);
+        game_menu(&menu_index, &game_mode, &menu_option_count,
+            turn_player, player_countries, player_country_counts);
     }
 }
 
