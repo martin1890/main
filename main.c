@@ -509,7 +509,7 @@ void draw_menu(int menu_index, int option, int can)
 void handle_main_menu_selection(int* current_mode, 
     int* menu_index, 
     int* menu_option_count, 
-    int turn_player, 
+    int* turn_player, 
     int player_countries[4][15], 
     int player_country_counts[4])
 {
