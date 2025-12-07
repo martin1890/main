@@ -518,18 +518,62 @@ void handle_main_menu_selection(int* current_mode,
         next_action_region(turn_player, player_countries, player_country_counts);
         break;
     case 1:
-        next_move_target();
+        current_mode = 0;
+        menu_option_count = 3;
+        menu_index = 4;
+        draw_menu(menu_index, 0, 1);
         break;
     case 2:
-
+        // samma menu option count some main menu
+        current_mode = 0;
+        menu_index = 2;
+        draw_menu(menu_index, 0, 1);
         break;
     case 3:
+        current_mode = 0;
+        menu_option_count = 1;
+        menu_index = 6;
+        draw_menu(menu_index, 0, 1);
         break;
 
     }
 
 }
-//void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count);
+void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count)
+{
+    switch (*current_mode)
+    {
+    case 0:
+        next_move_target();
+        break;
+    case 1:
+        break;
+    case 2:
+        menu_option_count = 4;
+        menu_index = 3;
+        current_mode = 1;
+        draw_menu(menu_index, 1, 1);
+        break;
+    }
+}
+void handle_buy_menu_selection(current_mode, menu_index, menu_option_count)
+{
+    switch (*current_mode)
+    {
+    case 0:
+        break;
+    case 1:
+        break;
+    case 2:
+        break;
+    case 3:
+        menu_index = 3;
+        current_mode = 2;
+        //samma menu option count som main menu
+        draw_menu(menu_index, 2, 1);
+        break;
+    }
+}
 // ... fler handler-deklarationer efter behov
 
 void game_menu(int* menu_index,
@@ -537,7 +581,8 @@ void game_menu(int* menu_index,
     int* menu_option_count,
     int turn_player,
     int player_countries[4][15],
-    int player_country_counts[4])
+    int player_country_counts[4],
+    int num_players)
 {
     static InputState input_state = { 0 };
 
@@ -567,11 +612,11 @@ void game_menu(int* menu_index,
             break;
 
         case MENU_MARCH:
-            //handle_march_menu_selection(current_mode, menu_index, menu_option_count);
+            handle_march_menu_selection(current_mode, menu_index, menu_option_count);
             break;
 
         case MENU_BUY:
-            // handle_buy_menu_selection(current_mode, menu_index, menu_option_count);
+            handle_buy_menu_selection(current_mode, menu_index, menu_option_count);
             break;
 
         case MENU_SIEGE:
@@ -587,6 +632,13 @@ void game_menu(int* menu_index,
             break;
 
         case MENU_SIEGE_TURN_END:
+            turn_player++;
+            if (turn_player > num_players) {
+                turn_player = 0;
+            }
+            menu_index = 3;
+            current_mode = 0;
+            draw_menu(menu_index, 0, 1);
             // ...
             break;
 
@@ -639,7 +691,7 @@ void start_game(int num_players, unsigned char player_colors[4],
 
     while (1) {
         game_menu(&menu_index, &game_mode, &menu_option_count,
-            turn_player, player_countries, player_country_counts);
+            turn_player, player_countries, player_country_counts, num_players);
     }
 }
 
