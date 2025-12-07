@@ -619,7 +619,7 @@ void start_game(int num_players, unsigned char player_colors[4],
 
     draw_sprite(0, 0, game_map, 320, 240);
     draw_rect(247, 192, 73, 48, 36);
-    draw_filled_rect(248, 191, 72, 47, 109);;
+    draw_filled_rect(248, 193, 72, 47, 109);;
 
 
     for (int i = 0; i < num_players; i++) {
@@ -634,7 +634,7 @@ void start_game(int num_players, unsigned char player_colors[4],
         }
     }
     // draw initial menu
-    has_prev = 0;
+    
     draw_menu(menu_index, game_mode, 1);
 
     while (1) {
