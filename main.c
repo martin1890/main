@@ -328,7 +328,7 @@ void draw_filled_rect(int x, int y, int width, int height, int color)
     draw_filled_rect(inner_x, inner_y, inner_w, inner_h, color);
 }
 
-void option_select(int x, int y, int width, int height, int background_color)
+void option_select(int x, int y, int width, int height, int selection_color, int background_color)
 {
     static int prev_x = 0;
     static int prev_y = 0;
@@ -342,7 +342,7 @@ void option_select(int x, int y, int width, int height, int background_color)
     }
 
     // Draw new selection border with constant color 216
-    draw_rect(x, y, width, height, 216);
+    draw_rect(x, y, width, height, selection_color);
 
     // Remember this selection for next time
     prev_x = x;
@@ -499,7 +499,7 @@ void draw_menu(int menu_index, int option, int can)
     int width = menu_positions[option][2];
     int height = menu_positions[option][3];
 
-    option_select(x, y, width, height, color);
+    option_select(x, y, width, height, color, 109);
 }
 
 
@@ -717,7 +717,7 @@ void update_start_menu()
     if (!initialized_selection)
     {
         initialized_selection = 1;
-        option_select(60, 30, 200, 36, 36);  // start at "2 players"
+        option_select(60, 30, 200, 36, 216, 36);  // start at "2 players"
         return;
     }
 
@@ -729,11 +729,11 @@ void update_start_menu()
             current_index = 0;
 
         if (current_index == 0)
-            option_select(60, 30, 200, 36, 36);
+            option_select(60, 30, 200, 36, 216, 36);
         else if (current_index == 1)
-            option_select(60, 102, 200, 36, 36);
+            option_select(60, 102, 200, 36, 216, 36);
         else
-            option_select(60, 174, 200, 36, 36);
+            option_select(60, 174, 200, 36, 216, 36);
     }
 
     // Button press: confirm selection and start game
