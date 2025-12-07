@@ -478,7 +478,6 @@ void next_move_target(void)
 
 void draw_menu(int menu_index, int option, int can)
 {
-    has_prev = 0;
 
     // skydd om något skulle skicka fel index
     if (menu_index < 0 || menu_index >= 9)
@@ -620,6 +619,7 @@ void start_game(int num_players, unsigned char player_colors[4],
 
     draw_sprite(0, 0, game_map, 320, 240);
     draw_rect(247, 192, 73, 48, 36);
+    draw_filled_rect(248, 191, 72, 47, 109);;
 
 
     for (int i = 0; i < num_players; i++) {
@@ -634,6 +634,7 @@ void start_game(int num_players, unsigned char player_colors[4],
         }
     }
     // draw initial menu
+    has_prev = 0;
     draw_menu(menu_index, game_mode, 1);
 
     while (1) {
