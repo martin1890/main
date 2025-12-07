@@ -294,36 +294,48 @@ void border_select(int region, int select_type)
     draw_faction_sprite(x, y, b->data, b->width, b->height, color_select);
 }
 
-void update_action_region_selection()
+void update_action_region_selection(int turn_player, int player_countries[4][15], int player_country_counts[4])
 {
-    static int current_region = 1;      // 1..30
     static int prev_button = 0;
     static int initialized = 0;
+    static int current_region_index = 0; // index i spelarens landlista
+    static int last_turn_player = -1;
 
     volatile unsigned int* BUTTON = (volatile unsigned int*)0x40000d0;
     int btn = (*BUTTON) & 1;
 
-    // Första gången: bara initiera prev_button, gör inget
-    if (!initialized)
+    // Om första gången, eller om turen bytt spelare: reset state
+    if (!initialized || last_turn_player != turn_player)
     {
-        prev_button = btn;
         initialized = 1;
+        last_turn_player = turn_player;
+        prev_button = btn;
+        current_region_index = 0;
         return;
     }
 
-    // Rising edge: 0 -> 1
+    int country_count = player_country_counts[turn_player];
+    if (country_count <= 0)
+    {
+        prev_button = btn;
+        return;
+    }
+
+    // Rising edge: knapp 0 -> 1
     if (btn == 1 && prev_button == 0)
     {
-        border_select(current_region, BORDER_SELECT_ACTION);
+        int region_id = player_countries[turn_player][current_region_index]; // 1..30
+        border_select(region_id, BORDER_SELECT_ACTION);
 
-        // Nästa region, wrap 30 -> 1
-        current_region++;
-        if (current_region > 30)
-            current_region = 1;
+        // Nästa land i spelarens lista, med wrap
+        current_region_index++;
+        if (current_region_index >= country_count)
+            current_region_index = 0;
     }
 
     prev_button = btn;
 }
+
 
 
 
@@ -332,6 +344,7 @@ void update_action_region_selection()
 void start_game(int num_players, unsigned char player_colors[4],
     int player_countries[4][15], int player_country_counts[4])
 {
+    int turn_player = 0;
     draw_sprite(0, 0, game_map, 320, 240);
 
     for (int i = 0; i < num_players; i++) {
@@ -347,7 +360,7 @@ void start_game(int num_players, unsigned char player_colors[4],
     }
 
     while (1) {
-        update_action_region_selection();
+        update_action_region_selection(turn_player, player_countries, player_country_counts);
     }
 }
 
