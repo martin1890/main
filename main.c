@@ -634,7 +634,7 @@ void start_game(int num_players, unsigned char player_colors[4],
         }
     }
     // draw initial menu
-    
+    has_prev = 0;
     draw_menu(menu_index, game_mode, 1);
 
     while (1) {
