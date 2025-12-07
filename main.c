@@ -556,7 +556,7 @@ void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_o
         break;
     }
 }
-void handle_buy_menu_selection(current_mode, menu_index, menu_option_count)
+void handle_buy_menu_selection(int* current_mode, int* menu_index, int* menu_option_count)
 {
     switch (*current_mode)
     {
