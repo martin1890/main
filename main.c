@@ -89,6 +89,11 @@ const int move_targets[30][7] = {
 {29, 25, 27, 28, 0, 0, 0},
 };
 
+#define SWITCH_ADDR 0x4000010
+#define BUTTON_ADDR 0x40000d0
+
+volatile unsigned int* const SWITCH = (volatile unsigned int*)SWITCH_ADDR;
+volatile unsigned int* const BUTTON = (volatile unsigned int*)BUTTON_ADDR;
 
 #define GAME_MENU_ACTION 0
 #define GAME_MENU_MOVE   1
@@ -98,6 +103,42 @@ const int move_targets[30][7] = {
 
 static int selected_action_region = -1; // 1..30, -1 = ingen
 static int selected_move_region = -1; // 1..30, -1 = ingen
+
+typedef struct {
+    int initialized;
+    int prev_switch;
+    int prev_button;
+} InputState;
+
+// Read raw switch/button and detect edges
+void read_input(InputState* state,
+    int* sw_value, int* btn_value,
+    int* switch_toggled, int* button_rising)
+{
+    int sw = (*SWITCH) & 1;
+    int btn = (*BUTTON) & 1;
+
+    if (!state->initialized)
+    {
+        state->initialized = 1;
+        state->prev_switch = sw;
+        state->prev_button = btn;
+        *switch_toggled = 0;
+        *button_rising = 0;
+    }
+    else
+    {
+        *switch_toggled = (sw != state->prev_switch);
+        *button_rising = (btn == 1 && state->prev_button == 0);
+
+        state->prev_switch = sw;
+        state->prev_button = btn;
+    }
+
+    *sw_value = sw;
+    *btn_value = btn;
+}
+
 
 // ===== Random number generator =====
 
@@ -359,8 +400,8 @@ void next_action_region(int turn_player, int player_countries[4][15], int player
 
 void next_move_target(void)
 {
-    extern const int move_targets[30][7]; // your adjacency table
-    extern int selected_action_region;    // declared in same file as border_select
+    extern const int move_targets[30][7]; // adjacency table
+    extern int selected_action_region;    // from border_select
 
     static int current_target_index = 0;  // index into move_targets row
     static int last_source_region = -1;
@@ -409,40 +450,32 @@ void next_move_target(void)
 
     // Highlight this as MOVE selection
     border_select(target_region, BORDER_SELECT_MOVE);
+
+    // Rita om ACTION-regionens border ovanpå så den inte "naggas" bort
+    border_select(selected_action_region, BORDER_SELECT_ACTION);
 }
 
-void game_menu(int* current_mode, int turn_player, int player_countries[4][15], int player_country_counts[4])
+
+void game_menu(int* current_mode, int turn_player,
+    int player_countries[4][15], int player_country_counts[4])
 {
-    static int prev_switch = 0;
-    static int prev_button = 0;
-    static int initialized = 0;
+    static InputState input_state = { 0 };
 
-    volatile unsigned int* SWITCH = (volatile unsigned int*)0x4000010;
-    volatile unsigned int* BUTTON = (volatile unsigned int*)0x40000d0;
+    int sw, btn;
+    int sw_toggled, btn_rising;
 
-    int sw = (*SWITCH) & 1;
-    int btn = (*BUTTON) & 1;
+    read_input(&input_state, &sw, &btn, &sw_toggled, &btn_rising);
 
-    if (!initialized)
+    // Switch toggle: cycle mode (ACTION <-> MOVE)
+    if (sw_toggled)
     {
-        initialized = 1;
-        prev_switch = sw;
-        prev_button = btn;
-        return;
-    }
-
-    // Switch toggle: cycle menu mode
-    if (sw != prev_switch)
-    {
-        prev_switch = sw;
-
         (*current_mode)++;
-        if (*current_mode >= 2) // currently two modes: ACTION and MOVE
+        if (*current_mode >= 2)
             *current_mode = 0;
     }
 
-    // Rising edge on button: run action for current mode
-    if (btn == 1 && prev_button == 0)
+    // Button rising edge: perform action for current mode
+    if (btn_rising)
     {
         if (*current_mode == GAME_MENU_ACTION)
         {
@@ -453,10 +486,7 @@ void game_menu(int* current_mode, int turn_player, int player_countries[4][15], 
             next_move_target();
         }
     }
-
-    prev_button = btn;
 }
-
 
 
 // ===== Game start / setup =====
@@ -544,38 +574,29 @@ void setup_and_start_game(int num_players)
     start_game(num_players, player_colors, player_countries, player_country_counts);
 }
 
-// ===== Updated start menu logic (switch + button) =====
+// ===== start menu logic (switch + button) =====
 
 void update_start_menu()
 {
     static int current_index = 0;   // 0 -> 2 players, 1 -> 3, 2 -> 4
-    static int prev_switch = 0;
-    static int prev_button = 0;
-    static int initialized = 0;
+    static int initialized_selection = 0;
+    static InputState input_state = {0};
 
-    volatile unsigned int* SWITCH = (volatile unsigned int*)0x4000010;
-    volatile unsigned int* BUTTON = (volatile unsigned int*)0x40000d0;
+    int sw, btn;
+    int sw_toggled, btn_rising;
 
-    entropy_counter = entropy_counter * 1664525u + 1013904223u;
+    read_input(&input_state, &sw, &btn, &sw_toggled, &btn_rising);
 
-    int sw = (*SWITCH) & 1;   // Least significant bit of switch bank
-    int btn = (*BUTTON) & 1;  // Least significant bit of buttons
-
-    // First call: draw initial selection
-    if (!initialized)
+    if (!initialized_selection)
     {
-        initialized = 1;
-        prev_switch = sw;
-        prev_button = btn;
+        initialized_selection = 1;
         option_select(60, 30, 200, 36, 36);  // start at "2 players"
         return;
     }
 
-    // --- Handle switch toggle to move selection ---
-    if (sw != prev_switch)
+    // Switch toggle: move selection in start menu
+    if (sw_toggled)
     {
-        prev_switch = sw;
-
         current_index++;
         if (current_index >= 3)
             current_index = 0;
@@ -588,24 +609,21 @@ void update_start_menu()
             option_select(60, 174, 200, 36, 36);
     }
 
-    // --- Handle button press to confirm selection ---
-    // Here we react on a rising edge (0 -> 1)
-    if (btn == 1 && prev_button == 0)
+    // Button press: confirm selection and start game
+    if (btn_rising)
     {
         int num_players;
         if (current_index == 0)      num_players = 2;
         else if (current_index == 1) num_players = 3;
         else                         num_players = 4;
 
-        // Seed RNG based on how long we waited plus some menu state
-        unsigned int seed = entropy_counter ^ (unsigned int)(current_index * 0x9E3779B1u);
-        seed_rng(seed);
+        // seed RNG somewhere here if du inte redan gör det på annat ställe
+        // seed_rng(...);
 
         setup_and_start_game(num_players);
     }
-
-    prev_button = btn;
 }
+
 
 int main()
 {
