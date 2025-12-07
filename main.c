@@ -114,7 +114,9 @@ enum {
 
 #define SWITCH_ADDR 0x4000010
 #define BUTTON_ADDR 0x40000d0
+#define VGA_ADDR 0x08000000
 
+volatile unsigned char* const VGA = (volatile unsigned char*)VGA_ADDR;
 volatile unsigned int* const SWITCH = (volatile unsigned int*)SWITCH_ADDR;
 volatile unsigned int* const BUTTON = (volatile unsigned int*)BUTTON_ADDR;
 static int has_prev = 0;
