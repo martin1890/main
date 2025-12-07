@@ -56,6 +56,42 @@ const int region_positions[30][16] = {
 {7, 0, 22, 10, 40, 24, 36, 0, 28, 31, 13, 13, 26, 1, 48, 2}
 };
 
+const int move_targets[30][7] = {
+{2, 20, 0, 0, 0, 0, 0},
+{1, 3, 4, 0, 0, 0, 0},
+{2, 4, 6, 0, 0, 0, 0},
+{2, 3, 6, 5, 0, 0, 0},
+{4, 6, 8, 0, 0, 0, 0},
+{7, 8, 5, 4, 3, 0, 0},
+{9, 8, 6, 0, 0, 0, 0},
+{5, 6, 7, 9, 13, 0, 0},
+{8, 7, 10, 13, 0, 0, 0},
+{9, 11, 12, 13, 0, 0, 0},
+{12, 10, 0, 0, 0, 0, 0},
+{16, 15, 13, 10, 11, 0, 0},
+{8, 10, 12, 15, 14, 0, 0},
+{13, 15, 18, 17, 0, 0, 0},
+{18, 14, 13, 12, 16, 19, 18},
+{15, 12, 19, 0, 0, 0, 0},
+{22, 14, 18, 0, 0, 0, 0},
+{17, 14, 15, 19, 0, 0, 0},
+{18, 15, 16, 0, 0, 0, 0},
+{1, 21, 23, 0, 0, 0, 0},
+{23, 20, 22, 0, 0, 0, 0},
+{23, 21, 26, 0, 0, 0, 0},
+{24, 20, 21, 22, 26, 25, 0},
+{23, 25, 29, 0, 0, 0, 0},
+{24, 23, 26, 27, 30, 29, 0},
+{25, 23, 22, 28, 27, 0, 0},
+{25, 26, 28, 30, 0, 0, 0},
+{27, 26, 30, 0, 0, 0, 0},
+{24, 25, 30, 0, 0, 0, 0},
+{29, 25, 27, 28, 0, 0, 0},
+};
+
+
+#define GAME_MENU_ACTION 0
+#define GAME_MENU_MOVE   1
 // 0 = "action"-region (gör saker här), 1 = "move"-region (flytta soldater hit)
 #define BORDER_SELECT_ACTION 0
 #define BORDER_SELECT_MOVE   1
@@ -294,48 +330,132 @@ void border_select(int region, int select_type)
     draw_faction_sprite(x, y, b->data, b->width, b->height, color_select);
 }
 
-void update_action_region_selection(int turn_player, int player_countries[4][15], int player_country_counts[4])
+void next_action_region(int turn_player, int player_countries[4][15], int player_country_counts[4])
 {
-    static int prev_button = 0;
-    static int initialized = 0;
-    static int current_region_index = 0; // index i spelarens landlista
+    static int current_region_index = 0; // index in current player's country list
     static int last_turn_player = -1;
+    static int initialized = 0;
 
-    volatile unsigned int* BUTTON = (volatile unsigned int*)0x40000d0;
-    int btn = (*BUTTON) & 1;
-
-    // Om första gången, eller om turen bytt spelare: reset state
+    // If first call or player turn changed, reset index
     if (!initialized || last_turn_player != turn_player)
     {
         initialized = 1;
         last_turn_player = turn_player;
-        prev_button = btn;
         current_region_index = 0;
-        return;
     }
 
     int country_count = player_country_counts[turn_player];
     if (country_count <= 0)
+        return;
+
+    int region_id = player_countries[turn_player][current_region_index]; // 1..30
+    border_select(region_id, BORDER_SELECT_ACTION);
+
+    // Advance index with wrap
+    current_region_index++;
+    if (current_region_index >= country_count)
+        current_region_index = 0;
+}
+
+void next_move_target(void)
+{
+    extern const int move_targets[30][7]; // your adjacency table
+    extern int selected_action_region;    // declared in same file as border_select
+
+    static int current_target_index = 0;  // index into move_targets row
+    static int last_source_region = -1;
+    static int initialized = 0;
+
+    if (!initialized)
     {
+        initialized = 1;
+        current_target_index = 0;
+        last_source_region = -1;
+    }
+
+    // Need a valid source region selected for ACTION
+    if (selected_action_region < 1 || selected_action_region > 30)
+        return;
+
+    int src_region = selected_action_region;
+    int src_idx = src_region - 1; // 0..29
+
+    // If source region changed, reset cycling index
+    if (last_source_region != src_region)
+    {
+        last_source_region = src_region;
+        current_target_index = 0;
+    }
+
+    // Find next non-zero neighbor in list
+    int tries = 0;
+    int target_region = 0;
+
+    while (tries < 7)
+    {
+        target_region = move_targets[src_idx][current_target_index];
+        current_target_index++;
+        if (current_target_index >= 7)
+            current_target_index = 0;
+
+        if (target_region != 0)
+            break;
+
+        tries++;
+    }
+
+    if (target_region == 0)
+        return; // no valid neighbors
+
+    // Highlight this as MOVE selection
+    border_select(target_region, BORDER_SELECT_MOVE);
+}
+
+void game_menu(int* current_mode, int turn_player, int player_countries[4][15], int player_country_counts[4])
+{
+    static int prev_switch = 0;
+    static int prev_button = 0;
+    static int initialized = 0;
+
+    volatile unsigned int* SWITCH = (volatile unsigned int*)0x4000010;
+    volatile unsigned int* BUTTON = (volatile unsigned int*)0x40000d0;
+
+    int sw = (*SWITCH) & 1;
+    int btn = (*BUTTON) & 1;
+
+    if (!initialized)
+    {
+        initialized = 1;
+        prev_switch = sw;
         prev_button = btn;
         return;
     }
 
-    // Rising edge: knapp 0 -> 1
+    // Switch toggle: cycle menu mode
+    if (sw != prev_switch)
+    {
+        prev_switch = sw;
+
+        (*current_mode)++;
+        if (*current_mode >= 2) // currently two modes: ACTION and MOVE
+            *current_mode = 0;
+    }
+
+    // Rising edge on button: run action for current mode
     if (btn == 1 && prev_button == 0)
     {
-        int region_id = player_countries[turn_player][current_region_index]; // 1..30
-        border_select(region_id, BORDER_SELECT_ACTION);
-
-        // Nästa land i spelarens lista, med wrap
-        current_region_index++;
-        if (current_region_index >= country_count)
-            current_region_index = 0;
+        if (*current_mode == GAME_MENU_ACTION)
+        {
+            next_action_region(turn_player, player_countries, player_country_counts);
+        }
+        else if (*current_mode == GAME_MENU_MOVE)
+        {
+            next_move_target();
+        }
     }
 
     prev_button = btn;
 }
-
 
 
 
@@ -360,7 +480,7 @@ void start_game(int num_players, unsigned char player_colors[4],
     }
 
     while (1) {
-        update_action_region_selection(turn_player, player_countries, player_country_counts);
+        game_menu(&game_mode, turn_player, player_countries, player_country_counts);
     }
 }
 
