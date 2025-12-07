@@ -465,6 +465,8 @@ void start_game(int num_players, unsigned char player_colors[4],
     int player_countries[4][15], int player_country_counts[4])
 {
     int turn_player = 0;
+    int game_mode = GAME_MENU_ACTION;
+
     draw_sprite(0, 0, game_map, 320, 240);
 
     for (int i = 0; i < num_players; i++) {
