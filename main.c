@@ -513,19 +513,19 @@ void handle_main_menu_selection(int* current_mode,
     int player_countries[4][15], 
     int player_country_counts[4])
 {
-    switch (current_mode)
+    switch (*current_mode)
     {
-    0:
-    next_action_region(turn_player, player_countries, player_country_counts);
-    break;
-    1:
-    next_move_target();
-    break;
-    2:
+    case 0:
+        next_action_region(turn_player, player_countries, player_country_counts);
+        break;
+    case 1:
+        next_move_target();
+        break;
+    case 2:
 
-    break;
-    3:
-    break;
+        break;
+    case 3:
+        break;
 
     }
 
