@@ -758,6 +758,23 @@ void draw_menu(int menu_index, int option, int can)
     option_select(x, y, width, height, color, 109);
 }
 
+void add_house_income(int turn_player,
+    int player_countries[4][15],
+    int player_country_counts[4])
+{
+    int income = 0;
+
+    for (int i = 0; i < count; i++)
+    {
+        int region_id = player_countries[turn_player][i]; // 1..30
+        int idx = region_id - 1; // 0..29
+        int houses = region_state[idx][REGION_HOUSES];
+        if (houses > 0)
+            income += houses;
+    }
+
+    gold[turn_player] += income;
+}
 
 
 
@@ -790,7 +807,6 @@ void handle_main_menu_selection(int* current_mode,
         *menu_option_count = 1;
         *menu_index = MENU_SIEGE_TURN_END;
         draw_menu(*menu_index, 0, 1);
-        next_action_region(*turn_player, player_countries, player_country_counts);
         break;
 
     }
@@ -906,7 +922,9 @@ void game_menu(int* menu_index,
             *current_mode = 0;
             *menu_option_count = 4;
             gold[*turn_player] += player_country_counts[*turn_player];
+            add_house_income(*turn_player, player_countries, player_country_counts);
             draw_menu(*menu_index, *current_mode, 1);
+            next_action_region(*turn_player, player_countries, player_country_counts);
             // ...
             break;
 
