@@ -25,6 +25,26 @@ const unsigned char soldat_sprite[9 * 19] = {
     0,0,136,136,0,136,136,0,172
 };
 
+const unsigned char house_sprite[9 * 8] = {
+    0, 0, 0, 0, 36, 0, 0, 0, 0,
+    0, 0, 0, 36, 252, 36, 0, 0, 0, 0,
+    0, 0, 36, 252, 252, 252, 36, 0, 0,
+    0, 36, 252, 252, 252, 252, 252, 36, 0,
+    36, 36, 36, 36, 36, 36, 36, 36, 36,
+    0, 36, 136, 136, 136, 136, 136, 36, 0,
+    0, 36, 136, 136, 136, 136, 136, 36, 0,
+    0, 36, 36, 36, 36, 36, 36, 36, 0
+};
+
+const unsigned char castle_sprite[11 * 5] = {
+    36, 36, 36, 0, 36, 36, 36, 0, 36, 36, 36,
+    36, 109, 36, 36, 36, 109, 36, 36, 36, 109, 36,
+    36, 109, 109, 109, 109, 109, 109, 109, 109, 109, 36,
+    36, 109, 109, 109, 36, 36, 36, 109, 109, 109,36,
+    36, 109, 109, 109, 36, 136, 36, 109, 109, 109, 36
+};
+
+
 const int region_positions[30][16] = {
 {0, 150, 9, 170, 18, 221, 58, 221, 20, 180, 12, 194, 44, 194, 43, 232},
 {78, 205, 114, 221, 104, 221, 161, 221, 128, 230, 143, 230, 149, 218, 87, 231},
@@ -337,6 +357,102 @@ void draw_filled_rect(int x, int y, int width, int height, int color)
     draw_filled_rect(inner_x, inner_y, inner_w, inner_h, color);
 }
 
+void spawn_soldier(int x, int y, int color)
+{
+    draw_faction_sprite(x, y, soldat_sprite, 9, 19, color);
+}
+
+void spawn_house(int x, int y)
+{
+    draw_sprite(x, y, house_sprite, 9, 8);
+}
+
+void spawn_castle(int x, int y)
+{
+    // 11x5, enligt din castle_sprite
+    draw_sprite(x, y, castle_sprite, 11, 5);
+}
+
+void buy_castle(int turn_player)
+{
+    // valid player?
+    if (turn_player < 0 || turn_player >= 4)
+        return;
+
+    // need 5 gold
+    if (gold[turn_player] < 5)
+        return;
+
+    // need a selected action region
+    if (selected_action_region < 1 || selected_action_region > NUM_REGIONS)
+        return;
+
+    int idx = selected_action_region - 1; // 0..29
+
+    // already has a castle?
+    if (region_state[idx][REGION_CASTLE] != 0)
+        return;
+
+    // pay
+    gold[turn_player] -= 5;
+
+    // mark castle present
+    region_state[idx][REGION_CASTLE] = 1;
+
+    // draw castle at its position
+    int x = region_positions[idx][8];
+    int y = region_positions[idx][9];
+    spawn_castle(x, y);
+}
+
+void buy_house(int turn_player)
+{
+    // check valid player
+    if (turn_player < 0 || turn_player >= 4)
+        return;
+
+    // need at least 3 gold
+    if (gold[turn_player] < 3)
+        return;
+
+    // need a selected action region
+    if (selected_action_region < 1 || selected_action_region > NUM_REGIONS)
+        return;
+
+    int idx = selected_action_region - 1; // 0..29
+
+    // max 3 houses
+    int before = region_state[idx][REGION_HOUSES];
+    if (before >= 3)
+        return;
+
+    // pay
+    gold[turn_player] -= 3;
+
+    int after = before + 1;
+    region_state[idx][REGION_HOUSES] = after;
+
+    // place the new house at correct slot
+    if (after == 1)
+    {
+        int x = region_positions[idx][10];
+        int y = region_positions[idx][11];
+        spawn_house(x, y);
+    }
+    else if (after == 2)
+    {
+        int x = region_positions[idx][12];
+        int y = region_positions[idx][13];
+        spawn_house(x, y);
+    }
+    else if (after == 3)
+    {
+        int x = region_positions[idx][14];
+        int y = region_positions[idx][15];
+        spawn_house(x, y);
+    }
+}
+
 void buy_soldier(int turn_player)
 {
     // invalid player index guard
@@ -368,15 +484,15 @@ void buy_soldier(int turn_player)
 
     if (after == 1)
     {
-        int x = region_positions[idx][2];
-        int y = region_positions[idx][3];
-        draw_faction_sprite(x, y, soldat_sprite, 9, 19, g_player_colors[turn_player]);
+        spawn_soldier(region_positions[idx][2], region_positions[idx][3], g_player_colors[turn_player]);
     }
     else if (after == 2)
     {
-        int x = region_positions[idx][4];
-        int y = region_positions[idx][5];
-        draw_faction_sprite(x, y, soldat_sprite, 9, 19, g_player_colors[turn_player]);
+        spawn_soldier(region_positions[idx][4], region_positions[idx][5], g_player_colors[turn_player]);
+    }
+    else if (after == 3)
+    {
+        spawn_soldier(region_positions[idx][6], region_positions[idx][7], g_player_colors[turn_player]);
     }
 }
 
@@ -635,8 +751,11 @@ void handle_buy_menu_selection(int* current_mode, int* menu_index,
         buy_soldier(turn_player);
         break;
     case 1:
+        // köp hus
+        buy_house(turn_player);
         break;
     case 2:
+        buy_castle(turn_player);
         break;
     case 3:
         *menu_index = 3;
@@ -689,7 +808,7 @@ void game_menu(int* menu_index,
 
         case MENU_BUY:
             handle_buy_menu_selection(current_mode, menu_index, menu_option_count,
-                turn_player);
+                *turn_player);
             break;
 
         case MENU_SIEGE:
@@ -760,11 +879,7 @@ void start_game(int num_players, unsigned char player_colors[4],
         for (int n = 0; n < player_country_counts[i]; n++) {
             int region_id = player_countries[i][n];   // 1..30
             int idx = region_id - 1;                  // 0..29
-
-            int region_x = region_positions[idx][2];  // välj vilken punkt du vill
-            int region_y = region_positions[idx][3];
-
-            draw_faction_sprite(region_x, region_y, soldat_sprite, 9, 19, player_colors[i]);
+            spawn_soldier(region_positions[idx][2], region_positions[idx][3], g_player_colors[i]);
         }
     }
     // draw initial menu
