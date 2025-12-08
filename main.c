@@ -27,7 +27,7 @@ const unsigned char soldat_sprite[9 * 19] = {
 
 const unsigned char house_sprite[9 * 8] = {
     0, 0, 0, 0, 36, 0, 0, 0, 0,
-    0, 0, 0, 36, 252, 36, 0, 0, 0, 0,
+    0, 0, 0, 36, 252, 36, 0, 0, 0,
     0, 0, 36, 252, 252, 252, 36, 0, 0,
     0, 36, 252, 252, 252, 252, 252, 36, 0,
     36, 36, 36, 36, 36, 36, 36, 36, 36,
@@ -223,6 +223,70 @@ int rand_range(int max)
 // Empty interrupt handler
 void handle_interrupt(unsigned _irq)
 {
+}
+
+// Redraws the background map for a small rectangle (used to erase soldiers)
+void redraw_map_area(int x, int y, int w, int h)
+{
+    // simple bounds guard
+    if (x < 0 || y < 0 || x + w > 320 || y + h > 240)
+        return;
+
+    for (int j = 0; j < h; j++)
+    {
+        int sy = y + j;
+        for (int i = 0; i < w; i++)
+        {
+            int sx = x + i;
+            unsigned char color = game_map[sy * 320 + sx];
+            VGA[sy * 320 + sx] = color;
+        }
+    }
+}
+
+// Redraw soldiers in one region according to region_state.
+// owner_player is the index 0..3 for g_player_colors.
+void redraw_region_soldiers(int region_id, int owner_player)
+{
+    if (region_id < 1 || region_id > NUM_REGIONS)
+        return;
+
+    if (owner_player < 0 || owner_player >= 4)
+        return;
+
+    int idx = region_id - 1;
+
+    // first erase the three possible soldier slots
+    // (each soldier sprite is 9x19 pixels)
+    for (int k = 0; k < 3; k++)
+    {
+        int px = region_positions[idx][2 + 2 * k];
+        int py = region_positions[idx][3 + 2 * k];
+        redraw_map_area(px, py, 9, 19);
+    }
+
+    int count = region_state[idx][REGION_SOLDIERS];
+    if (count < 0) count = 0;
+    if (count > 3) count = 3; // we only draw up to 3
+
+    if (count >= 1)
+    {
+        int x = region_positions[idx][2];
+        int y = region_positions[idx][3];
+        spawn_soldier(x, y, g_player_colors[owner_player]);
+    }
+    if (count >= 2)
+    {
+        int x = region_positions[idx][4];
+        int y = region_positions[idx][5];
+        spawn_soldier(x, y, g_player_colors[owner_player]);
+    }
+    if (count >= 3)
+    {
+        int x = region_positions[idx][6];
+        int y = region_positions[idx][7];
+        spawn_soldier(x, y, g_player_colors[owner_player]);
+    }
 }
 
 // Draw a sprite at position (x, y)
@@ -507,6 +571,22 @@ void init_region_state(void)
     }
 }
 
+// Returns 1 if player 'p' owns region 'region_id' (1..30), otherwise 0
+int player_owns_region(int p,
+    int region_id,
+    int player_countries[4][15],
+    int player_country_counts[4])
+{
+    if (region_id < 1 || region_id > NUM_REGIONS)
+        return 0;
+
+    for (int i = 0; i < player_country_counts[p]; i++)
+    {
+        if (player_countries[p][i] == region_id)
+            return 1;
+    }
+    return 0;
+}
 
 void option_select(int x, int y, int width, int height, int selection_color, int background_color)
 {
@@ -530,6 +610,70 @@ void option_select(int x, int y, int width, int height, int selection_color, int
     prev_w = width;
     prev_h = height;
     has_prev = 1;
+}
+
+// Placeholder for later battle system
+void start_battle_stub(int attacker_player,
+    int from_region,
+    int to_region)
+{
+    (void)attacker_player;
+    (void)from_region;
+    (void)to_region;
+    // TODO: implement battle later
+}
+
+// Try to move soldiers from selected_action_region to selected_move_region.
+// Called from case 1 in handle_march_menu_selection.
+void move_soldiers_from_action_to_move(int turn_player,
+    int player_countries[4][15],
+    int player_country_counts[4])
+{
+    // Must have a valid source and destination
+    if (selected_action_region < 1 || selected_action_region > NUM_REGIONS)
+        return;
+    if (selected_move_region < 1 || selected_move_region > NUM_REGIONS)
+        return;
+
+    int src_id = selected_action_region;
+    int dst_id = selected_move_region;
+
+    if (src_id == dst_id)
+        return;
+
+    int src_idx = src_id - 1;
+    int dst_idx = dst_id - 1;
+
+    // We only move if the source actually belongs to the current player
+    if (!player_owns_region(turn_player, src_id,
+        player_countries, player_country_counts))
+        return;
+
+    int soldiers_src = region_state[src_idx][REGION_SOLDIERS];
+    if (soldiers_src < 2)
+        return; // need at least 2, leave 1 behind
+
+    int move_count = soldiers_src - 1;
+
+    // Check if destination is owned by the same player
+    int dest_owned_by_turn = player_owns_region(turn_player, dst_id,
+        player_countries, player_country_counts);
+
+    if (dest_owned_by_turn)
+    {
+        // Friendly transfer: move soldiers in region_state
+        region_state[src_idx][REGION_SOLDIERS] -= move_count;
+        region_state[dst_idx][REGION_SOLDIERS] += move_count;
+
+        // Redraw source and destination soldiers
+        redraw_region_soldiers(src_id, turn_player);
+        redraw_region_soldiers(dst_id, turn_player);
+    }
+    else
+    {
+        // Enemy or neutral -> start battle (for now just stub)
+        start_battle_stub(turn_player, src_id, dst_id);
+    }
 }
 
 void border_select(int region, int select_type)
@@ -723,7 +867,7 @@ void handle_main_menu_selection(int* current_mode,
     }
 
 }
-void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count)
+void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count, int turn_player int player_countries, int player_country_counts)
 {
     switch (*current_mode)
     {
@@ -731,6 +875,9 @@ void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_o
         next_move_target();
         break;
     case 1:
+        move_soldiers_from_action_to_move(turn_player,
+            player_countries,
+            player_country_counts);
         break;
     case 2:
         *menu_option_count = 4;
@@ -803,7 +950,7 @@ void game_menu(int* menu_index,
             break;
 
         case MENU_MARCH:
-            handle_march_menu_selection(current_mode, menu_index, menu_option_count);
+            handle_march_menu_selection(current_mode, menu_index, menu_option_count, turn_player, player_countries, player_country_counts);
             break;
 
         case MENU_BUY:
@@ -967,6 +1114,7 @@ void update_start_menu()
     int sw_toggled, btn_rising;
 
     read_input(&input_state, &sw, &btn, &sw_toggled, &btn_rising);
+    entropy_counter++;
 
     if (!initialized_selection)
     {
@@ -998,9 +1146,12 @@ void update_start_menu()
         else if (current_index == 1) num_players = 3;
         else                         num_players = 4;
 
-        // seed RNG somewhere here if du inte redan gör det på annat ställe
         // seed_rng(...);
+        unsigned int seed = entropy_counter
+            ^ (unsigned int)sw
+            ^ ((unsigned int)btn << 8);
 
+        seed_rng(seed);
         setup_and_start_game(num_players);
     }
 }
