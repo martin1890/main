@@ -121,7 +121,7 @@ const int menu_positions[23][4] = {
     {250, 193, 64, 12}, //MENU_positions_MARCH
     {250, 205, 64, 13},
     {250, 227, 64, 10},
-    {250, 198, 320, 240},  //MENU_positions_BUY
+    {250, 198, 11, 21},  //MENU_positions_BUY
     {263, 204, 11, 10},
     {257, 207, 13, 7},
     {250, 227, 50, 10},
@@ -935,6 +935,7 @@ void start_game(int num_players, unsigned char player_colors[4],
             spawn_soldier(region_positions[idx][2], region_positions[idx][3], g_player_colors[i]);
         }
     }
+    next_action_region(turn_player, player_countries, player_country_counts);
     // draw initial menu
     has_prev = 0;
     draw_menu(menu_index, game_mode, 1);
