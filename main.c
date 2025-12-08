@@ -120,71 +120,61 @@ typedef struct {
 
 #define MAX_MENU_OPTIONS 4
 
-// index 0..8 MÅSTE följa ditt enum:
-// 0: MENU_AFTER_BATTLE
-// 1: MENU_BATTLE
-// 2: MENU_BUY
-// 3: MENU_MAIN
-// 4: MENU_MARCH
-// 5: MENU_SIEGE
-// 6: MENU_SIEGE_TURN_END
-// 7: MENU_SORTIE
-// 8: MENU_WILL_SORTIE (fyll i själv senare)
-static const MenuRect menu_positions[MENU_COUNT][MAX_MENU_OPTIONS] = {
-    // MENU_AFTER_BATTLE (1 val)
+static const MenuRect menu_positions[9][MAX_MENU_OPTIONS] = {
+    // 0: MENU_AFTER_BATTLE
     {
         {249, 194, 70, 45}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}
     },
-    // MENU_BATTLE (2 val)
+    // 1: MENU_BATTLE
     {
         {249, 194, 46,  9},
         {249, 204, 46,  8},
         {0,   0,   0,   0},
         {0,   0,   0,   0}
     },
-    // MENU_BUY (4 val)
+    // 2: MENU_BUY
     {
         {250, 198, 320, 240},
         {263, 204,  11,  10},
         {257, 207,  13,   7},
         {250, 227,  50,  10}
     },
-    // MENU_MAIN (4 val) – samma som du hade
+    // 3: MENU_MAIN
     {
         {250, 193, 64, 12},
         {250, 205, 61, 10},
         {250, 215, 29, 12},
         {250, 227, 50, 10}
     },
-    // MENU_MARCH (3 val)
+    // 4: MENU_MARCH
     {
         {250, 193, 64, 12},
         {250, 205, 64, 13},
         {250, 227, 64, 10},
         {0,   0,   0,  0}
     },
-    // MENU_SIEGE (2 val)
+    // 5: MENU_SIEGE
     {
         {249, 194, 48, 12},
         {249, 213, 47, 10},
         {0,   0,   0,  0},
         {0,   0,   0,  0}
     },
-    // MENU_SIEGE_TURN_END (1 val)
+    // 6: MENU_SIEGE_TURN_END
     {
         {249, 194, 63, 24},
         {0,   0,   0,  0},
         {0,   0,   0,  0},
         {0,   0,   0,  0}
     },
-    // MENU_SORTIE (3 val)
+    // 7: MENU_SORTIE
     {
         {249, 194, 66, 22},
         {264, 223, 13, 10},
         {281, 223, 18, 10},
         {0,   0,   0,  0}
     },
-    // MENU_WILL_SORTIE – TODO: fyll rätt värden
+    // 8: MENU_WILL_SORTIE – TODO: fill correct values later
     {
         {0, 0, 0, 0},
         {0, 0, 0, 0},
@@ -193,7 +183,7 @@ static const MenuRect menu_positions[MENU_COUNT][MAX_MENU_OPTIONS] = {
     }
 };
 
-static const int menu_option_counts[MENU_COUNT] = {
+static const int menu_option_counts[9] = {
     1, // MENU_AFTER_BATTLE
     2, // MENU_BATTLE
     4, // MENU_BUY
@@ -202,21 +192,7 @@ static const int menu_option_counts[MENU_COUNT] = {
     2, // MENU_SIEGE
     1, // MENU_SIEGE_TURN_END
     3, // MENU_SORTIE
-    0  // MENU_WILL_SORTIE (ändra när du fyller i)
-};
-
-
-enum {
-    MENU_AFTER_BATTLE = 0,
-    MENU_BATTLE,
-    MENU_BUY,
-    MENU_MAIN,
-    MENU_MARCH,
-    MENU_SIEGE,
-    MENU_SIEGE_TURN_END,
-    MENU_SORTIE,
-    MENU_WILL_SORTIE,
-    MENU_COUNT
+    0  // MENU_WILL_SORTIE
 };
 
 
@@ -745,18 +721,18 @@ void next_move_target(void)
 
 void draw_menu(int menu_index, int option, int can)
 {
-    if (menu_index < 0 || menu_index >= MENU_COUNT)
+    if (menu_index < 0 || menu_index >= 9)
         return;
 
     const unsigned char* sprite = menu_sprites[menu_index];
 
-    // alla menyer är 72x47 vid (248,193)
+    // All menus are drawn at the same place with the same size
     draw_filled_rect(248, 193, 72, 47, 109);
     draw_sprite(248, 193, sprite, 72, 47);
 
     int color = (can == 1) ? 252 : 200;
 
-    // safeguard if option is out of range
+    // Clamp option to valid range for this menu
     if (option < 0 || option >= menu_option_counts[menu_index])
         option = 0;
 
@@ -769,6 +745,7 @@ void draw_menu(int menu_index, int option, int can)
 
     option_select(x, y, width, height, color, 109);
 }
+
 
 
 
