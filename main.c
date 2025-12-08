@@ -867,7 +867,7 @@ void handle_main_menu_selection(int* current_mode,
     }
 
 }
-void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count, int turn_player int player_countries, int player_country_counts)
+void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count, int turn_player, int player_countries, int player_country_counts)
 {
     switch (*current_mode)
     {
