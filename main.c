@@ -169,17 +169,17 @@ static const MenuRect menu_positions[9][MAX_MENU_OPTIONS] = {
     },
     // 7: MENU_SORTIE
     {
+        {249, 194, 46,  9},
+        {249, 204, 46,  8},
+        {249, 212, 15, 8 },
+        {0,   0,   0,   0}
+    },
+    // 8: MENU_WILL_SORTIE – TODO: fill correct values later
+    {
         {249, 194, 66, 22},
         {264, 223, 13, 10},
         {281, 223, 18, 10},
         {0,   0,   0,  0}
-    },
-    // 8: MENU_WILL_SORTIE – TODO: fill correct values later
-    {
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0}
     }
 };
 
@@ -193,6 +193,39 @@ static const int menu_option_counts[9] = {
     1, // MENU_SIEGE_TURN_END
     3, // MENU_SORTIE
     0  // MENU_WILL_SORTIE
+};
+
+typedef struct {
+    int x;
+    int y;
+    int w;
+    int h;
+} MenuRect;
+
+#define MAX_MENU_OPTIONS 4
+
+// index 0..8 MÅSTE följa ditt enum:
+// 0: MENU_AFTER_BATTLE
+// 1: MENU_BATTLE
+// 2: MENU_BUY
+// 3: MENU_MAIN
+// 4: MENU_MARCH
+// 5: MENU_SIEGE
+// 6: MENU_SIEGE_TURN_END
+// 7: MENU_SORTIE
+// 8: MENU_WILL_SORTIE (fyll i själv senare)
+
+enum {
+    MENU_AFTER_BATTLE = 0,
+    MENU_BATTLE,
+    MENU_BUY,
+    MENU_MAIN,
+    MENU_MARCH,
+    MENU_SIEGE,
+    MENU_SIEGE_TURN_END,
+    MENU_SORTIE,
+    MENU_WILL_SORTIE,
+    MENU_COUNT
 };
 
 
