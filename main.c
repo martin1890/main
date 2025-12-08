@@ -123,7 +123,7 @@ const int menu_positions[23][4] = {
     {250, 227, 64, 10},
     {250, 198, 11, 21},  //MENU_positions_BUY
     {263, 204, 11, 10},
-    {257, 207, 13, 7},
+    {275, 207, 13, 7},
     {250, 227, 50, 10},
     {249, 194, 48, 12},  //MENU_positions_SIEGE
     {249, 213, 47, 10},
@@ -549,20 +549,40 @@ void option_select(int x, int y, int width, int height, int selection_color, int
 
 void border_select(int region, int select_type)
 {
-    if (region < 1 || region > 30)
-        return; // ogiltigt regions-id
-
     int color_select;
     int* prev_region_ptr;
 
     if (select_type == BORDER_SELECT_MOVE) {
-        color_select = 220;                 
+        color_select = 220;
         prev_region_ptr = &selected_move_region;
     }
     else {
-        color_select = 132;                 
+        color_select = 132;
         prev_region_ptr = &selected_action_region;
     }
+
+    // NYTT: region == 0 betyder "ta bort highlight i denna kategori"
+    if (region == 0)
+    {
+        if (*prev_region_ptr >= 1 && *prev_region_ptr <= 30)
+        {
+            int prev_idx = *prev_region_ptr - 1;
+            int px = region_positions[prev_idx][0];
+            int py = region_positions[prev_idx][1];
+            const BorderInfo* pb = &borders[prev_idx];
+
+            // rita tillbaka kartgränsen i färg 36
+            draw_faction_sprite(px, py, pb->data, pb->width, pb->height, 36);
+        }
+
+        *prev_region_ptr = 0;   // ingen region är selekterad längre
+        return;
+    }
+
+    // från och med här är region *inte* 0, så vi kan göra din vanliga logik
+
+    if (region < 1 || region > 30)
+        return; // ogiltigt regions-id
 
     int idx = region - 1;                   // 0..29
 
@@ -573,19 +593,18 @@ void border_select(int region, int select_type)
         int px = region_positions[prev_idx][0];
         int py = region_positions[prev_idx][1];
         const BorderInfo* pb = &borders[prev_idx];
- 
+
         draw_faction_sprite(px, py, pb->data, pb->width, pb->height, 36);
     }
 
-
     *prev_region_ptr = region;
-
 
     int x = region_positions[idx][0];
     int y = region_positions[idx][1];
     const BorderInfo* b = &borders[idx];
     draw_faction_sprite(x, y, b->data, b->width, b->height, color_select);
 }
+
 
 void next_action_region(int turn_player,
     int player_countries[4][15],
@@ -786,6 +805,7 @@ void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_o
     case 1:
         break;
     case 2:
+        border_select(0, BORDER_SELECT_MOVE);
         *menu_option_count = 4;
         *menu_index = 3;
         *current_mode = 1;
