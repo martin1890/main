@@ -140,8 +140,8 @@ const int menu_positions[23][4] = {
     {250, 227, 50, 10},
     {249, 194, 48, 12},  //MENU_positions_SIEGE
     {249, 213, 47, 10},
-    {249, 194, 70, 45}  //MENU_positions_AFTER_BATTLE
-    {249, 194, 63, 24}  //MENU_positions_SIEGE_TURN_END
+    {249, 194, 70, 45},  //MENU_positions_AFTER_BATTLE
+    {249, 194, 63, 24},  //MENU_positions_SIEGE_TURN_END
     {249, 194, 66, 22},  //MENU_positions_WILL_SORTIE
     {264, 223, 13, 10},
     {281, 223, 18, 10},
