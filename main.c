@@ -769,8 +769,9 @@ void add_house_income(int turn_player,
         int region_id = player_countries[turn_player][i]; // 1..30
         int idx = region_id - 1; // 0..29
         int houses = region_state[idx][REGION_HOUSES];
-        if (houses > 0)
+        {
             income += houses;
+        }
     }
 
     gold[turn_player] += income;
