@@ -111,6 +111,32 @@ const int move_targets[30][7] = {
 {29, 25, 27, 28, 0, 0, 0},
 };
 
+#define MAX_MENU_OPTIONS 4
+
+// index 0..8 MÅSTE följa ditt enum:
+// 0: MENU_AFTER_BATTLE
+// 1: MENU_BATTLE
+// 2: MENU_BUY
+// 3: MENU_MAIN
+// 4: MENU_MARCH
+// 5: MENU_SIEGE
+// 6: MENU_SIEGE_TURN_END
+// 7: MENU_SORTIE
+// 8: MENU_WILL_SORTIE (fyll i själv senare)
+
+enum {
+    MENU_AFTER_BATTLE = 0,
+    MENU_BATTLE,
+    MENU_BUY,
+    MENU_MAIN,
+    MENU_MARCH,
+    MENU_SIEGE,
+    MENU_SIEGE_TURN_END,
+    MENU_SORTIE,
+    MENU_WILL_SORTIE,
+    MENU_COUNT
+};
+
 typedef struct {
     int x;
     int y;
@@ -123,7 +149,10 @@ typedef struct {
 static const MenuRect menu_positions[9][MAX_MENU_OPTIONS] = {
     // 0: MENU_AFTER_BATTLE
     {
-        {249, 194, 70, 45}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}
+        {249,194,70,45},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0}
     },
     // 1: MENU_BATTLE
     {
@@ -201,32 +230,6 @@ typedef struct {
     int w;
     int h;
 } MenuRect;
-
-#define MAX_MENU_OPTIONS 4
-
-// index 0..8 MÅSTE följa ditt enum:
-// 0: MENU_AFTER_BATTLE
-// 1: MENU_BATTLE
-// 2: MENU_BUY
-// 3: MENU_MAIN
-// 4: MENU_MARCH
-// 5: MENU_SIEGE
-// 6: MENU_SIEGE_TURN_END
-// 7: MENU_SORTIE
-// 8: MENU_WILL_SORTIE (fyll i själv senare)
-
-enum {
-    MENU_AFTER_BATTLE = 0,
-    MENU_BATTLE,
-    MENU_BUY,
-    MENU_MAIN,
-    MENU_MARCH,
-    MENU_SIEGE,
-    MENU_SIEGE_TURN_END,
-    MENU_SORTIE,
-    MENU_WILL_SORTIE,
-    MENU_COUNT
-};
 
 
 #define SWITCH_ADDR 0x4000010
