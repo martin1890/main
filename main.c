@@ -111,18 +111,71 @@ const int move_targets[30][7] = {
 {29, 25, 27, 28, 0, 0, 0},
 };
 
-#define MAX_MENU_OPTIONS 4
+typedef struct { int x; int y; int w; int h; } MenuPos;
 
-// index 0..8 MÅSTE följa ditt enum:
-// 0: MENU_AFTER_BATTLE
-// 1: MENU_BATTLE
-// 2: MENU_BUY
-// 3: MENU_MAIN
-// 4: MENU_MARCH
-// 5: MENU_SIEGE
-// 6: MENU_SIEGE_TURN_END
-// 7: MENU_SORTIE
-// 8: MENU_WILL_SORTIE (fyll i själv senare)
+/*
+ Updated: menu positions are now defined per-menu.
+ The enum in this file defines menu indices; match the cases below.
+*/
+
+// Main menu (kept as original)
+static const MenuPos menu_positions_main[] = {
+    { 250, 193, 64, 12 },
+    { 250, 205, 61, 10 },
+    { 250, 215, 29, 12 },
+    { 250, 227, 50, 10 }
+};
+
+// MENU_BATTLE (2 options)
+static const MenuPos menu_positions_battle[] = {
+    {249, 194, 46, 9},
+    {249, 204, 46, 8}
+};
+
+// MENU_MARCH (3 options)
+static const MenuPos menu_positions_march[] = {
+    {250, 193, 64, 12},
+    {250, 205, 64, 13},
+    {250, 227, 64, 10}
+};
+
+// MENU_BUY (4 options, first is full overlay)
+static const MenuPos menu_positions_buy[] = {
+    {250, 198, 320, 240},
+    {263, 204, 11, 10},
+    {257, 207, 13, 7},
+    {250, 227, 50, 10}
+};
+
+// MENU_SIEGE (2 options)
+static const MenuPos menu_positions_siege[] = {
+    {249, 194, 48, 12},
+    {249, 213, 47, 10}
+};
+
+// MENU_AFTER_BATTLE (1 option)
+static const MenuPos menu_positions_after_battle[] = {
+    {249, 194, 70, 45}
+};
+
+// MENU_SIEGE_TURN_END (1 option)
+static const MenuPos menu_positions_siege_turn_end[] = {
+    {249, 194, 63, 24}
+};
+
+// MENU_WILL_SORTIE (3 options)
+static const MenuPos menu_positions_will_sortie[] = {
+    {249, 194, 66, 22},
+    {264, 223, 13, 10},
+    {281, 223, 18, 10}
+};
+
+// MENU_SORTIE (3 options)
+static const MenuPos menu_positions_sortie[] = {
+    {249, 194, 46, 9},
+    {249, 204, 46, 8},
+    {249, 214, 15, 8}
+};
 
 enum {
     MENU_AFTER_BATTLE = 0,
@@ -136,100 +189,6 @@ enum {
     MENU_WILL_SORTIE,
     MENU_COUNT
 };
-
-typedef struct {
-    int x;
-    int y;
-    int w;
-    int h;
-} MenuRect;
-
-#define MAX_MENU_OPTIONS 4
-
-static const MenuRect menu_positions[9][MAX_MENU_OPTIONS] = {
-    // 0: MENU_AFTER_BATTLE
-    {
-        {249,194,70,45},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0}
-    },
-    // 1: MENU_BATTLE
-    {
-        {249, 194, 46,  9},
-        {249, 204, 46,  8},
-        {0,   0,   0,   0},
-        {0,   0,   0,   0}
-    },
-    // 2: MENU_BUY
-    {
-        {250, 198, 320, 240},
-        {263, 204,  11,  10},
-        {257, 207,  13,   7},
-        {250, 227,  50,  10}
-    },
-    // 3: MENU_MAIN
-    {
-        {250, 193, 64, 12},
-        {250, 205, 61, 10},
-        {250, 215, 29, 12},
-        {250, 227, 50, 10}
-    },
-    // 4: MENU_MARCH
-    {
-        {250, 193, 64, 12},
-        {250, 205, 64, 13},
-        {250, 227, 64, 10},
-        {0,   0,   0,  0}
-    },
-    // 5: MENU_SIEGE
-    {
-        {249, 194, 48, 12},
-        {249, 213, 47, 10},
-        {0,   0,   0,  0},
-        {0,   0,   0,  0}
-    },
-    // 6: MENU_SIEGE_TURN_END
-    {
-        {249, 194, 63, 24},
-        {0,   0,   0,  0},
-        {0,   0,   0,  0},
-        {0,   0,   0,  0}
-    },
-    // 7: MENU_SORTIE
-    {
-        {249, 194, 46,  9},
-        {249, 204, 46,  8},
-        {249, 212, 15, 8 },
-        {0,   0,   0,   0}
-    },
-    // 8: MENU_WILL_SORTIE – TODO: fill correct values later
-    {
-        {249, 194, 66, 22},
-        {264, 223, 13, 10},
-        {281, 223, 18, 10},
-        {0,   0,   0,  0}
-    }
-};
-
-static const int menu_option_counts[9] = {
-    1, // MENU_AFTER_BATTLE
-    2, // MENU_BATTLE
-    4, // MENU_BUY
-    4, // MENU_MAIN
-    3, // MENU_MARCH
-    2, // MENU_SIEGE
-    1, // MENU_SIEGE_TURN_END
-    3, // MENU_SORTIE
-    0  // MENU_WILL_SORTIE
-};
-
-typedef struct {
-    int x;
-    int y;
-    int w;
-    int h;
-} MenuRect;
 
 
 #define SWITCH_ADDR 0x4000010
@@ -637,11 +596,11 @@ void border_select(int region, int select_type)
     int* prev_region_ptr;
 
     if (select_type == BORDER_SELECT_MOVE) {
-        color_select = 220;                 
+        color_select = 220;
         prev_region_ptr = &selected_move_region;
     }
     else {
-        color_select = 132;                 
+        color_select = 132;
         prev_region_ptr = &selected_action_region;
     }
 
@@ -654,7 +613,7 @@ void border_select(int region, int select_type)
         int px = region_positions[prev_idx][0];
         int py = region_positions[prev_idx][1];
         const BorderInfo* pb = &borders[prev_idx];
- 
+
         draw_faction_sprite(px, py, pb->data, pb->width, pb->height, 36);
     }
 
@@ -755,34 +714,89 @@ void next_move_target(void)
     border_select(selected_action_region, BORDER_SELECT_ACTION);
 }
 
+/*
+ Helper: return per-menu position array and its count.
+*/
+const MenuPos* get_menu_positions_array(int menu_index, int* out_count)
+{
+    switch (menu_index)
+    {
+    case MENU_AFTER_BATTLE:
+        *out_count = sizeof(menu_positions_after_battle) / sizeof(menu_positions_after_battle[0]);
+        return menu_positions_after_battle;
+
+    case MENU_BATTLE:
+        *out_count = sizeof(menu_positions_battle) / sizeof(menu_positions_battle[0]);
+        return menu_positions_battle;
+
+    case MENU_BUY:
+        *out_count = sizeof(menu_positions_buy) / sizeof(menu_positions_buy[0]);
+        return menu_positions_buy;
+
+    case MENU_MAIN:
+        *out_count = sizeof(menu_positions_main) / sizeof(menu_positions_main[0]);
+        return menu_positions_main;
+
+    case MENU_MARCH:
+        *out_count = sizeof(menu_positions_march) / sizeof(menu_positions_march[0]);
+        return menu_positions_march;
+
+    case MENU_SIEGE:
+        *out_count = sizeof(menu_positions_siege) / sizeof(menu_positions_siege[0]);
+        return menu_positions_siege;
+
+    case MENU_SIEGE_TURN_END:
+        *out_count = sizeof(menu_positions_siege_turn_end) / sizeof(menu_positions_siege_turn_end[0]);
+        return menu_positions_siege_turn_end;
+
+    case MENU_SORTIE:
+        *out_count = sizeof(menu_positions_sortie) / sizeof(menu_positions_sortie[0]);
+        return menu_positions_sortie;
+
+    case MENU_WILL_SORTIE:
+        *out_count = sizeof(menu_positions_will_sortie) / sizeof(menu_positions_will_sortie[0]);
+        return menu_positions_will_sortie;
+
+    default:
+        *out_count = 0;
+        return NULL;
+    }
+}
+
 void draw_menu(int menu_index, int option, int can)
 {
-    if (menu_index < 0 || menu_index >= 9)
+
+
+    if (menu_index < 0 || menu_index >= MENU_COUNT)
         return;
 
     const unsigned char* sprite = menu_sprites[menu_index];
 
-    // All menus are drawn at the same place with the same size
+    // background sprite + box (unchanged)
     draw_filled_rect(248, 193, 72, 47, 109);
     draw_sprite(248, 193, sprite, 72, 47);
 
-    int color = (can == 1) ? 252 : 200;
+    int color;
+    if (can == 1)
+        color = 252;
+    else
+        color = 200;
 
-    // Clamp option to valid range for this menu
-    if (option < 0 || option >= menu_option_counts[menu_index])
-        option = 0;
+    int pos_count = 0;
+    const MenuPos* positions = get_menu_positions_array(menu_index, &pos_count);
+    if (positions == NULL || pos_count == 0)
+        return;
 
-    MenuRect rect = menu_positions[menu_index][option];
+    if (option < 0 || option >= pos_count)
+        return;
 
-    int x = rect.x;
-    int y = rect.y;
-    int width = rect.w;
-    int height = rect.h;
+    int x = positions[option].x;
+    int y = positions[option].y;
+    int width = positions[option].w;
+    int height = positions[option].h;
 
     option_select(x, y, width, height, color, 109);
 }
-
-
 
 
 
@@ -801,21 +815,21 @@ void handle_main_menu_selection(int* current_mode,
         break;
     case 1:
         *current_mode = 0;
-        *menu_option_count = menu_option_counts[*menu_index];
-        *menu_index = MENU_MARCH;
-        draw_menu(*menu_index, *current_mode, 1);
+        *menu_option_count = 3;
+        *menu_index = 4;
+        draw_menu(*menu_index, 0, 1);
         break;
     case 2:
         // samma menu option count some main menu
         *current_mode = 0;
         *menu_index = 2;
-        draw_menu(*menu_index, *current_mode, 1);
+        draw_menu(*menu_index, 0, 1);
         break;
     case 3:
         *current_mode = 0;
         *menu_option_count = 1;
         *menu_index = MENU_SIEGE_TURN_END;
-        draw_menu(*menu_index, *current_mode, 1);
+        draw_menu(*menu_index, 0, 1);
         break;
 
     }
