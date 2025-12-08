@@ -719,7 +719,7 @@ void handle_main_menu_selection(int* current_mode,
     }
 
 }
-void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count, int turn_player, int player_countries, int player_country_counts)
+void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count)
 {
     switch (*current_mode)
     {
@@ -799,7 +799,7 @@ void game_menu(int* menu_index,
             break;
 
         case MENU_MARCH:
-            handle_march_menu_selection(current_mode, menu_index, menu_option_count, turn_player, player_countries, player_country_counts);
+            handle_march_menu_selection(current_mode, menu_index, menu_option_count);
             break;
 
         case MENU_BUY:
