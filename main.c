@@ -300,6 +300,23 @@ int region_belongs_to_player(int region_id,
     return 0;
 }
 
+void spawn_soldier(int x, int y, int color)
+{
+    draw_faction_sprite(x, y, soldat_sprite, 9, 19, color);
+}
+
+void spawn_house(int x, int y)
+{
+    draw_sprite(x, y, house_sprite, 9, 8);
+}
+
+void spawn_castle(int x, int y)
+{
+    // 11x5, enligt din castle_sprite
+    draw_sprite(x, y, castle_sprite, 11, 5);
+}
+
+
 void move_one_soldier(int turn_player,
     int player_countries[4][15],
     int player_country_counts[4])
@@ -463,22 +480,6 @@ void draw_filled_rect(int x, int y, int width, int height, int color)
 
     // Recursive call to fill inner area
     draw_filled_rect(inner_x, inner_y, inner_w, inner_h, color);
-}
-
-void spawn_soldier(int x, int y, int color)
-{
-    draw_faction_sprite(x, y, soldat_sprite, 9, 19, color);
-}
-
-void spawn_house(int x, int y)
-{
-    draw_sprite(x, y, house_sprite, 9, 8);
-}
-
-void spawn_castle(int x, int y)
-{
-    // 11x5, enligt din castle_sprite
-    draw_sprite(x, y, castle_sprite, 11, 5);
 }
 
 void buy_castle(int turn_player)
