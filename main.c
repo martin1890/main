@@ -392,7 +392,9 @@ void border_select(int region, int select_type)
     draw_faction_sprite(x, y, b->data, b->width, b->height, color_select);
 }
 
-void next_action_region(int turn_player, int player_countries[4][15], int player_country_counts[4])
+void next_action_region(int turn_player,
+    int player_countries[4][15],
+    int player_country_counts[4])
 {
     static int current_region_index = 0; // index in current player's country list
     static int last_turn_player = -1;
@@ -418,6 +420,7 @@ void next_action_region(int turn_player, int player_countries[4][15], int player
     if (current_region_index >= country_count)
         current_region_index = 0;
 }
+
 
 void next_move_target(void)
 {
@@ -506,17 +509,17 @@ void draw_menu(int menu_index, int option, int can)
 
 
 
-void handle_main_menu_selection(int* current_mode, 
-    int* menu_index, 
-    int* menu_option_count, 
-    int* turn_player, 
-    int player_countries[4][15], 
+void handle_main_menu_selection(int* current_mode,
+    int* menu_index,
+    int* menu_option_count,
+    int* turn_player,
+    int player_countries[4][15],
     int player_country_counts[4])
 {
     switch (*current_mode)
     {
     case 0:
-        next_action_region(turn_player, player_countries, player_country_counts);
+        next_action_region(*turn_player, player_countries, player_country_counts);
         break;
     case 1:
         *current_mode = 0;
