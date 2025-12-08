@@ -121,6 +121,15 @@ volatile unsigned int* const SWITCH = (volatile unsigned int*)SWITCH_ADDR;
 volatile unsigned int* const BUTTON = (volatile unsigned int*)BUTTON_ADDR;
 static int has_prev = 0;
 
+#define NUM_REGIONS 30
+#define REGION_SOLDIERS 0
+#define REGION_HOUSES   1
+#define REGION_CASTLE   2
+
+int gold[4] = { 0, 0, 0, 0 };
+int region_state[NUM_REGIONS][3];
+unsigned char g_player_colors[4] = { 0, 0, 0, 0 }; // copied from player_colors
+
 #define GAME_MENU_ACTION 0
 #define GAME_MENU_MOVE   1
 // 0 = "action"-region (gör saker här), 1 = "move"-region (flytta soldater hit)
@@ -327,6 +336,61 @@ void draw_filled_rect(int x, int y, int width, int height, int color)
     // Recursive call to fill inner area
     draw_filled_rect(inner_x, inner_y, inner_w, inner_h, color);
 }
+
+void buy_soldier(int turn_player)
+{
+    // invalid player index guard
+    if (turn_player < 0 || turn_player >= 4)
+        return;
+
+    // need at least 3 gold
+    if (gold[turn_player] < 3)
+        return;
+
+    // need a selected action region
+    if (selected_action_region < 1 || selected_action_region > NUM_REGIONS)
+        return;
+
+    int idx = selected_action_region - 1; // 0..29
+
+    // pay
+    gold[turn_player] -= 3;
+
+    int before = region_state[idx][REGION_SOLDIERS];
+    if (before < 0) before = 0;
+
+    region_state[idx][REGION_SOLDIERS] = before + 1;
+    int after = region_state[idx][REGION_SOLDIERS];
+
+    // draw new soldier sprite only if we have 1..2 visible positions
+    // if there is 1 soldier -> use positions[2], [3]
+    // if there are 2 soldiers -> use positions[4], [5]
+
+    if (after == 1)
+    {
+        int x = region_positions[idx][2];
+        int y = region_positions[idx][3];
+        draw_faction_sprite(x, y, soldat_sprite, 9, 19, g_player_colors[turn_player]);
+    }
+    else if (after == 2)
+    {
+        int x = region_positions[idx][4];
+        int y = region_positions[idx][5];
+        draw_faction_sprite(x, y, soldat_sprite, 9, 19, g_player_colors[turn_player]);
+    }
+}
+
+
+void init_region_state(void)
+{
+    for (int i = 0; i < NUM_REGIONS; i++)
+    {
+        region_state[i][REGION_SOLDIERS] = 1; // alla börjar med 1 soldat
+        region_state[i][REGION_HOUSES] = 0; // inga hus
+        region_state[i][REGION_CASTLE] = 0; // ingen borg
+    }
+}
+
 
 void option_select(int x, int y, int width, int height, int selection_color, int background_color)
 {
@@ -560,11 +624,15 @@ void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_o
         break;
     }
 }
-void handle_buy_menu_selection(int* current_mode, int* menu_index, int* menu_option_count)
+void handle_buy_menu_selection(int* current_mode, int* menu_index,
+    int* menu_option_count, int turn_player)
+
 {
     switch (*current_mode)
     {
     case 0:
+        // buy one soldier in the currently selected action region
+        buy_soldier(turn_player);
         break;
     case 1:
         break;
@@ -620,7 +688,8 @@ void game_menu(int* menu_index,
             break;
 
         case MENU_BUY:
-            handle_buy_menu_selection(current_mode, menu_index, menu_option_count);
+            handle_buy_menu_selection(current_mode, menu_index, menu_option_count,
+                turn_player);
             break;
 
         case MENU_SIEGE:
@@ -637,13 +706,14 @@ void game_menu(int* menu_index,
 
         case MENU_SIEGE_TURN_END:
             (*turn_player)++;
-            if (*turn_player > num_players) {
+            if (*turn_player >= num_players) {
                 *turn_player = 0;
             }
-            *menu_index = 3;
+            *menu_index = MENU_MAIN;
             *current_mode = 0;
             *menu_option_count = 4;
-            draw_menu(*menu_index, 0, 1);
+            gold[*turn_player] += player_country_counts[*turn_player];
+            draw_menu(*menu_index, *current_mode, 1);
             // ...
             break;
 
@@ -674,9 +744,16 @@ void start_game(int num_players, unsigned char player_colors[4],
     int menu_index = MENU_MAIN; // start in main menu
     int menu_option_count = 4;  // main menu has 4 options
 
+    for (int p = 0; p < num_players; p++) {
+        g_player_colors[p] = player_colors[p];
+    }
+
+    init_region_state();
+
     draw_sprite(0, 0, game_map, 320, 240);
     draw_rect(247, 192, 73, 48, 36);
-    draw_filled_rect(248, 193, 72, 47, 109);;
+    draw_filled_rect(248, 193, 72, 47, 109);
+
 
 
     for (int i = 0; i < num_players; i++) {
@@ -753,6 +830,11 @@ void setup_and_start_game(int num_players)
         }
         current_player++;
     }
+
+    for (int p = 0; p < 4; p++)
+        gold[p] = 0;  // nollställ
+
+    gold[0] = player_country_counts[0];
 
     // ---- Start the actual game ----
     start_game(num_players, player_colors, player_countries, player_country_counts);
