@@ -111,68 +111,41 @@ const int move_targets[30][7] = {
 {29, 25, 27, 28, 0, 0, 0},
 };
 
-typedef struct { int x; int y; int w; int h; } MenuPos;
-
-/*
- Updated: menu positions are now defined per-menu.
- The enum in this file defines menu indices; match the cases below.
-*/
-
-// Main menu (kept as original)
-static const MenuPos menu_positions_main[] = {
+const int MENU_positions_MAIN[4][4] = {
     { 250, 193, 64, 12 },
     { 250, 205, 61, 10 },
     { 250, 215, 29, 12 },
     { 250, 227, 50, 10 }
 };
 
-// MENU_BATTLE (2 options)
-static const MenuPos menu_positions_battle[] = {
-    {249, 194, 46, 9},
-    {249, 204, 46, 8}
+const int MENU_positions_BATTLE[2][4] =
+{
+{249, 194, 46, 9},
+{249, 204, 46, 8}
 };
 
-// MENU_MARCH (3 options)
-static const MenuPos menu_positions_march[] = {
+const int menu_positions[23][4] = {
     {250, 193, 64, 12},
+    {250, 205, 61, 10},
+    {250, 215, 29, 12},
+    {250, 227, 50, 10},
+    {249, 194, 46, 9}, //MENU_positions_BATTLE
+    {249, 204, 46, 8},
+    {250, 193, 64, 12}, //MENU_positions_MARCH
     {250, 205, 64, 13},
-    {250, 227, 64, 10}
-};
-
-// MENU_BUY (4 options, first is full overlay)
-static const MenuPos menu_positions_buy[] = {
-    {250, 198, 320, 240},
+    {250, 227, 64, 10},
+    {250, 198, 320, 240},  //MENU_positions_BUY
     {263, 204, 11, 10},
     {257, 207, 13, 7},
-    {250, 227, 50, 10}
-};
-
-// MENU_SIEGE (2 options)
-static const MenuPos menu_positions_siege[] = {
-    {249, 194, 48, 12},
-    {249, 213, 47, 10}
-};
-
-// MENU_AFTER_BATTLE (1 option)
-static const MenuPos menu_positions_after_battle[] = {
-    {249, 194, 70, 45}
-};
-
-// MENU_SIEGE_TURN_END (1 option)
-static const MenuPos menu_positions_siege_turn_end[] = {
-    {249, 194, 63, 24}
-};
-
-// MENU_WILL_SORTIE (3 options)
-static const MenuPos menu_positions_will_sortie[] = {
-    {249, 194, 66, 22},
+    {250, 227, 50, 10},
+    {249, 194, 48, 12},  //MENU_positions_SIEGE
+    {249, 213, 47, 10},
+    {249, 194, 70, 45}  //MENU_positions_AFTER_BATTLE
+    {249, 194, 63, 24}  //MENU_positions_SIEGE_TURN_END
+    {249, 194, 66, 22},  //MENU_positions_WILL_SORTIE
     {264, 223, 13, 10},
-    {281, 223, 18, 10}
-};
-
-// MENU_SORTIE (3 options)
-static const MenuPos menu_positions_sortie[] = {
-    {249, 194, 46, 9},
+    {281, 223, 18, 10},
+    {249, 194, 46, 9},  //MENU_positions_SORTIE
     {249, 204, 46, 8},
     {249, 214, 15, 8}
 };
@@ -596,11 +569,11 @@ void border_select(int region, int select_type)
     int* prev_region_ptr;
 
     if (select_type == BORDER_SELECT_MOVE) {
-        color_select = 220;
+        color_select = 220;                 
         prev_region_ptr = &selected_move_region;
     }
     else {
-        color_select = 132;
+        color_select = 132;                 
         prev_region_ptr = &selected_action_region;
     }
 
@@ -613,7 +586,7 @@ void border_select(int region, int select_type)
         int px = region_positions[prev_idx][0];
         int py = region_positions[prev_idx][1];
         const BorderInfo* pb = &borders[prev_idx];
-
+ 
         draw_faction_sprite(px, py, pb->data, pb->width, pb->height, 36);
     }
 
@@ -714,52 +687,39 @@ void next_move_target(void)
     border_select(selected_action_region, BORDER_SELECT_ACTION);
 }
 
-/*
- Helper: return per-menu position array and its count.
-*/
-const MenuPos* get_menu_positions_array(int menu_index, int* out_count)
+int index(int key)
 {
-    switch (menu_index)
+    switch (key)
     {
-    case MENU_AFTER_BATTLE:
-        *out_count = sizeof(menu_positions_after_battle) / sizeof(menu_positions_after_battle[0]);
-        return menu_positions_after_battle;
+    case 0: // MENU_AFTER_BATTLE
+        return 15;
 
-    case MENU_BATTLE:
-        *out_count = sizeof(menu_positions_battle) / sizeof(menu_positions_battle[0]);
-        return menu_positions_battle;
+    case 1: // MENU_BATTLE
+        return 4;
 
-    case MENU_BUY:
-        *out_count = sizeof(menu_positions_buy) / sizeof(menu_positions_buy[0]);
-        return menu_positions_buy;
+    case 2: // MENU_BUY
+        return 9;
 
-    case MENU_MAIN:
-        *out_count = sizeof(menu_positions_main) / sizeof(menu_positions_main[0]);
-        return menu_positions_main;
+    case 3: // MENU_MAIN
+        return 0;
 
-    case MENU_MARCH:
-        *out_count = sizeof(menu_positions_march) / sizeof(menu_positions_march[0]);
-        return menu_positions_march;
+    case 4: // MENU_MARCH
+        return 6;
 
-    case MENU_SIEGE:
-        *out_count = sizeof(menu_positions_siege) / sizeof(menu_positions_siege[0]);
-        return menu_positions_siege;
+    case 5: // MENU_SIEGE
+        return 13;
 
-    case MENU_SIEGE_TURN_END:
-        *out_count = sizeof(menu_positions_siege_turn_end) / sizeof(menu_positions_siege_turn_end[0]);
-        return menu_positions_siege_turn_end;
+    case 6: // MENU_SIEGE_TURN_END
+        return 16;
 
-    case MENU_SORTIE:
-        *out_count = sizeof(menu_positions_sortie) / sizeof(menu_positions_sortie[0]);
-        return menu_positions_sortie;
+    case 7: // MENU_SORTIE
+        return 20;
 
-    case MENU_WILL_SORTIE:
-        *out_count = sizeof(menu_positions_will_sortie) / sizeof(menu_positions_will_sortie[0]);
-        return menu_positions_will_sortie;
+    case 8: // MENU_WILL_SORTIE
+        return 17;
 
     default:
-        *out_count = 0;
-        return NULL;
+        return 0;
     }
 }
 
@@ -767,12 +727,12 @@ void draw_menu(int menu_index, int option, int can)
 {
 
 
-    if (menu_index < 0 || menu_index >= MENU_COUNT)
+    if (menu_index < 0 || menu_index >= 9)
         return;
 
     const unsigned char* sprite = menu_sprites[menu_index];
 
-    // background sprite + box (unchanged)
+
     draw_filled_rect(248, 193, 72, 47, 109);
     draw_sprite(248, 193, sprite, 72, 47);
 
@@ -782,18 +742,12 @@ void draw_menu(int menu_index, int option, int can)
     else
         color = 200;
 
-    int pos_count = 0;
-    const MenuPos* positions = get_menu_positions_array(menu_index, &pos_count);
-    if (positions == NULL || pos_count == 0)
-        return;
+    option = option + index(menu_index);
 
-    if (option < 0 || option >= pos_count)
-        return;
-
-    int x = positions[option].x;
-    int y = positions[option].y;
-    int width = positions[option].w;
-    int height = positions[option].h;
+    int x = menu_positions[option][0];
+    int y = menu_positions[option][1];
+    int width = menu_positions[option][2];
+    int height = menu_positions[option][3];
 
     option_select(x, y, width, height, color, 109);
 }
