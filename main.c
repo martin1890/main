@@ -111,12 +111,100 @@ const int move_targets[30][7] = {
 {29, 25, 27, 28, 0, 0, 0},
 };
 
-const int menu_positions[4][4] = {
-    { 250, 193, 64, 12 },
-    { 250, 205, 61, 10 },
-    { 250, 215, 29, 12 },
-    { 250, 227, 50, 10 }
+typedef struct {
+    int x;
+    int y;
+    int w;
+    int h;
+} MenuRect;
+
+#define MAX_MENU_OPTIONS 4
+
+// index 0..8 MÅSTE följa ditt enum:
+// 0: MENU_AFTER_BATTLE
+// 1: MENU_BATTLE
+// 2: MENU_BUY
+// 3: MENU_MAIN
+// 4: MENU_MARCH
+// 5: MENU_SIEGE
+// 6: MENU_SIEGE_TURN_END
+// 7: MENU_SORTIE
+// 8: MENU_WILL_SORTIE (fyll i själv senare)
+static const MenuRect menu_positions[MENU_COUNT][MAX_MENU_OPTIONS] = {
+    // MENU_AFTER_BATTLE (1 val)
+    {
+        {249, 194, 70, 45}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}
+    },
+    // MENU_BATTLE (2 val)
+    {
+        {249, 194, 46,  9},
+        {249, 204, 46,  8},
+        {0,   0,   0,   0},
+        {0,   0,   0,   0}
+    },
+    // MENU_BUY (4 val)
+    {
+        {250, 198, 320, 240},
+        {263, 204,  11,  10},
+        {257, 207,  13,   7},
+        {250, 227,  50,  10}
+    },
+    // MENU_MAIN (4 val) – samma som du hade
+    {
+        {250, 193, 64, 12},
+        {250, 205, 61, 10},
+        {250, 215, 29, 12},
+        {250, 227, 50, 10}
+    },
+    // MENU_MARCH (3 val)
+    {
+        {250, 193, 64, 12},
+        {250, 205, 64, 13},
+        {250, 227, 64, 10},
+        {0,   0,   0,  0}
+    },
+    // MENU_SIEGE (2 val)
+    {
+        {249, 194, 48, 12},
+        {249, 213, 47, 10},
+        {0,   0,   0,  0},
+        {0,   0,   0,  0}
+    },
+    // MENU_SIEGE_TURN_END (1 val)
+    {
+        {249, 194, 63, 24},
+        {0,   0,   0,  0},
+        {0,   0,   0,  0},
+        {0,   0,   0,  0}
+    },
+    // MENU_SORTIE (3 val)
+    {
+        {249, 194, 66, 22},
+        {264, 223, 13, 10},
+        {281, 223, 18, 10},
+        {0,   0,   0,  0}
+    },
+    // MENU_WILL_SORTIE – TODO: fyll rätt värden
+    {
+        {0, 0, 0, 0},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0}
+    }
 };
+
+static const int menu_option_counts[MENU_COUNT] = {
+    1, // MENU_AFTER_BATTLE
+    2, // MENU_BATTLE
+    4, // MENU_BUY
+    4, // MENU_MAIN
+    3, // MENU_MARCH
+    2, // MENU_SIEGE
+    1, // MENU_SIEGE_TURN_END
+    3, // MENU_SORTIE
+    0  // MENU_WILL_SORTIE (ändra när du fyller i)
+};
+
 
 enum {
     MENU_AFTER_BATTLE = 0,
@@ -657,30 +745,31 @@ void next_move_target(void)
 
 void draw_menu(int menu_index, int option, int can)
 {
-
-
-    if (menu_index < 0 || menu_index >= 9)
+    if (menu_index < 0 || menu_index >= MENU_COUNT)
         return;
 
     const unsigned char* sprite = menu_sprites[menu_index];
 
-
+    // alla menyer är 72x47 vid (248,193)
     draw_filled_rect(248, 193, 72, 47, 109);
     draw_sprite(248, 193, sprite, 72, 47);
 
-    int color;
-    if (can == 1)
-        color = 252;
-    else
-        color = 200;
+    int color = (can == 1) ? 252 : 200;
 
-    int x = menu_positions[option][0];
-    int y = menu_positions[option][1];
-    int width = menu_positions[option][2];
-    int height = menu_positions[option][3];
+    // safeguard if option is out of range
+    if (option < 0 || option >= menu_option_counts[menu_index])
+        option = 0;
+
+    MenuRect rect = menu_positions[menu_index][option];
+
+    int x = rect.x;
+    int y = rect.y;
+    int width = rect.w;
+    int height = rect.h;
 
     option_select(x, y, width, height, color, 109);
 }
+
 
 
 
@@ -699,21 +788,21 @@ void handle_main_menu_selection(int* current_mode,
         break;
     case 1:
         *current_mode = 0;
-        *menu_option_count = 3;
-        *menu_index = 4;
-        draw_menu(*menu_index, 0, 1);
+        *menu_option_count = menu_option_counts[*menu_index];
+        *menu_index = MENU_MARCH;
+        draw_menu(*menu_index, *current_mode, 1);
         break;
     case 2:
         // samma menu option count some main menu
         *current_mode = 0;
         *menu_index = 2;
-        draw_menu(*menu_index, 0, 1);
+        draw_menu(*menu_index, *current_mode, 1);
         break;
     case 3:
         *current_mode = 0;
         *menu_option_count = 1;
         *menu_index = MENU_SIEGE_TURN_END;
-        draw_menu(*menu_index, 0, 1);
+        draw_menu(*menu_index, *current_mode, 1);
         break;
 
     }
