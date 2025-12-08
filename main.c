@@ -225,70 +225,6 @@ void handle_interrupt(unsigned _irq)
 {
 }
 
-// Redraws the background map for a small rectangle (used to erase soldiers)
-void redraw_map_area(int x, int y, int w, int h)
-{
-    // simple bounds guard
-    if (x < 0 || y < 0 || x + w > 320 || y + h > 240)
-        return;
-
-    for (int j = 0; j < h; j++)
-    {
-        int sy = y + j;
-        for (int i = 0; i < w; i++)
-        {
-            int sx = x + i;
-            unsigned char color = game_map[sy * 320 + sx];
-            VGA[sy * 320 + sx] = color;
-        }
-    }
-}
-
-// Redraw soldiers in one region according to region_state.
-// owner_player is the index 0..3 for g_player_colors.
-void redraw_region_soldiers(int region_id, int owner_player)
-{
-    if (region_id < 1 || region_id > NUM_REGIONS)
-        return;
-
-    if (owner_player < 0 || owner_player >= 4)
-        return;
-
-    int idx = region_id - 1;
-
-    // first erase the three possible soldier slots
-    // (each soldier sprite is 9x19 pixels)
-    for (int k = 0; k < 3; k++)
-    {
-        int px = region_positions[idx][2 + 2 * k];
-        int py = region_positions[idx][3 + 2 * k];
-        redraw_map_area(px, py, 9, 19);
-    }
-
-    int count = region_state[idx][REGION_SOLDIERS];
-    if (count < 0) count = 0;
-    if (count > 3) count = 3; // we only draw up to 3
-
-    if (count >= 1)
-    {
-        int x = region_positions[idx][2];
-        int y = region_positions[idx][3];
-        spawn_soldier(x, y, g_player_colors[owner_player]);
-    }
-    if (count >= 2)
-    {
-        int x = region_positions[idx][4];
-        int y = region_positions[idx][5];
-        spawn_soldier(x, y, g_player_colors[owner_player]);
-    }
-    if (count >= 3)
-    {
-        int x = region_positions[idx][6];
-        int y = region_positions[idx][7];
-        spawn_soldier(x, y, g_player_colors[owner_player]);
-    }
-}
-
 // Draw a sprite at position (x, y)
 void draw_sprite(int x, int y, const unsigned char* sprite, int sprite_width, int sprite_height)
 {
@@ -625,7 +561,8 @@ void start_battle_stub(int attacker_player,
 
 // Try to move soldiers from selected_action_region to selected_move_region.
 // Called from case 1 in handle_march_menu_selection.
-void move_soldiers_from_action_to_move(int turn_player,
+void move_soldiers_from_action_to_move(
+    int turn_player,
     int player_countries[4][15],
     int player_country_counts[4])
 {
@@ -867,52 +804,107 @@ void handle_main_menu_selection(int* current_mode,
     }
 
 }
-void handle_march_menu_selection(int* current_mode, int* menu_index, int* menu_option_count, int turn_player, int player_countries, int player_country_counts)
+void handle_march_menu_selection(
+    int* current_mode,
+    int* menu_index,
+    int* menu_option_count,
+    int* turn_player,
+    int player_countries[4][15],
+    int player_country_counts[4])
 {
     switch (*current_mode)
     {
     case 0:
+        // välj nästa målregion
         next_move_target();
         break;
+
     case 1:
-        move_soldiers_from_action_to_move(turn_player,
+        // försök flytta soldater från action-region till move-region
+        move_soldiers_from_action_to_move(
+            *turn_player,
             player_countries,
             player_country_counts);
         break;
-    case 2:
-        *menu_option_count = 4;
-        *menu_index = 3;
-        *current_mode = 1;
-        draw_menu(*menu_index, 1, 1);
-        break;
-    }
-}
-void handle_buy_menu_selection(int* current_mode, int* menu_index,
-    int* menu_option_count, int turn_player)
 
-{
-    switch (*current_mode)
-    {
-    case 0:
-        // buy one soldier in the currently selected action region
-        buy_soldier(turn_player);
-        break;
-    case 1:
-        // köp hus
-        buy_house(turn_player);
-        break;
     case 2:
-        buy_castle(turn_player);
+        // tillbaka till huvudmenyn
+        *menu_option_count = 4;
+        *menu_index = MENU_MAIN;
+        *current_mode = 0;
+        draw_menu(*menu_index, *current_mode, 1);
         break;
-    case 3:
-        *menu_index = 3;
-        *current_mode = 2;
-        //samma menu option count som main menu
-        draw_menu(*menu_index, 2, 1);
+
+    default:
         break;
     }
 }
+
 // ... fler handler-deklarationer efter behov
+
+// Redraws the background map for a small rectangle (used to erase soldiers)
+void redraw_map_area(int x, int y, int w, int h)
+{
+    // simple bounds guard
+    if (x < 0 || y < 0 || x + w > 320 || y + h > 240)
+        return;
+
+    for (int j = 0; j < h; j++)
+    {
+        int sy = y + j;
+        for (int i = 0; i < w; i++)
+        {
+            int sx = x + i;
+            unsigned char color = game_map[sy * 320 + sx];
+            VGA[sy * 320 + sx] = color;
+        }
+    }
+}
+
+// Redraw soldiers in one region according to region_state.
+// owner_player is the index 0..3 for g_player_colors.
+void redraw_region_soldiers(int region_id, int owner_player)
+{
+    if (region_id < 1 || region_id > NUM_REGIONS)
+        return;
+
+    if (owner_player < 0 || owner_player >= 4)
+        return;
+
+    int idx = region_id - 1;
+
+    // first erase the three possible soldier slots
+    // (each soldier sprite is 9x19 pixels)
+    for (int k = 0; k < 3; k++)
+    {
+        int px = region_positions[idx][2 + 2 * k];
+        int py = region_positions[idx][3 + 2 * k];
+        redraw_map_area(px, py, 9, 19);
+    }
+
+    int count = region_state[idx][REGION_SOLDIERS];
+    if (count < 0) count = 0;
+    if (count > 3) count = 3; // we only draw up to 3
+
+    if (count >= 1)
+    {
+        int x = region_positions[idx][2];
+        int y = region_positions[idx][3];
+        spawn_soldier(x, y, g_player_colors[owner_player]);
+    }
+    if (count >= 2)
+    {
+        int x = region_positions[idx][4];
+        int y = region_positions[idx][5];
+        spawn_soldier(x, y, g_player_colors[owner_player]);
+    }
+    if (count >= 3)
+    {
+        int x = region_positions[idx][6];
+        int y = region_positions[idx][7];
+        spawn_soldier(x, y, g_player_colors[owner_player]);
+    }
+}
 
 void game_menu(int* menu_index,
     int* current_mode,
@@ -946,7 +938,7 @@ void game_menu(int* menu_index,
         switch (*menu_index)
         {
         case MENU_MAIN:
-            handle_main_menu_selection(current_mode, menu_index, menu_option_count, turn_player, player_countries, player_country_counts);
+            handle_main_menu_selection(current_mode, menu_index, menu_option_count, *turn_player, player_countries, player_country_counts);
             break;
 
         case MENU_MARCH:
@@ -1033,10 +1025,17 @@ void start_game(int num_players, unsigned char player_colors[4],
     has_prev = 0;
     draw_menu(menu_index, game_mode, 1);
 
+    int turn_player = 0;
+
     while (1) {
-        game_menu(&menu_index, &game_mode, &menu_option_count,
-            &turn_player, player_countries, player_country_counts, num_players);
+        game_menu(&menu_index,
+            &game_mode,
+            &menu_option_count,
+            &turn_player,
+            player_countries,
+            player_country_counts);
     }
+
 }
 
 
