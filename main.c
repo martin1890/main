@@ -790,6 +790,7 @@ void handle_main_menu_selection(int* current_mode,
         *menu_option_count = 1;
         *menu_index = MENU_SIEGE_TURN_END;
         draw_menu(*menu_index, 0, 1);
+        next_action_region(turn_player, player_countries, player_country_counts);
         break;
 
     }
